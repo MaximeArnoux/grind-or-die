@@ -7,6 +7,12 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+// Converts a UTC date string to a Date object with Paris local time values
+export function toParisDate(dateStr: string | Date): Date {
+  const d = typeof dateStr === 'string' ? new Date(dateStr) : dateStr
+  return new Date(d.toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }))
+}
+
 export function formatPoints(points: number): string {
   if (points > 0) return `+${points}`
   return `${points}`
@@ -25,7 +31,7 @@ export function formatDateFull(date: string | Date): string {
 }
 
 export function formatTimeAgo(date: string | Date): string {
-  const d = typeof date === 'string' ? parseISO(date) : date
+  const d = typeof date === 'string' ? new Date(date) : date
   const now = new Date()
   const diff = now.getTime() - d.getTime()
   const minutes = Math.floor(diff / 60000)

@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/Badge'
 import { format, startOfWeek } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { WeightChartClient } from '@/components/features/WeightChartClient'
-import { formatPoints, capitalizeFirst } from '@/lib/utils'
+import { formatPoints, capitalizeFirst, toParisDate } from '@/lib/utils'
 
 export default async function ProfilPage({ params }: { params: Promise<{ username: string }> }) {
   const { username } = await params
@@ -140,7 +140,7 @@ export default async function ProfilPage({ params }: { params: Promise<{ usernam
                     <div>
                       <p className="text-sm text-white font-medium">{log.activity?.name}</p>
                       <p className="text-xs text-gray-500">
-                        {format(new Date(log.logged_at), 'dd MMM à HH:mm', { locale: fr })}
+                        {format(toParisDate(log.logged_at), 'dd MMM à HH:mm', { locale: fr })}
                       </p>
                     </div>
                   </div>

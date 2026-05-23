@@ -61,7 +61,7 @@ export default async function ClassementsPage() {
   // Weekly chart (last 7 days)
   const chartData = await Promise.all(
     Array.from({ length: 7 }, async (_, i) => {
-      const day = subDays(new Date(), 6 - i)
+      const day = subDays(new Date(new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' })), 6 - i)
       const dayStart = new Date(day); dayStart.setHours(0, 0, 0, 0)
       const dayEnd = new Date(day); dayEnd.setHours(23, 59, 59, 999)
       const { data } = await supabase

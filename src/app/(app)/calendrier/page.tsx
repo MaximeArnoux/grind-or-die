@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { CalendarClient } from '@/components/features/CalendarClient'
 import { startOfMonth, endOfMonth, format, subMonths } from 'date-fns'
+import { toParisDate } from '@/lib/utils'
 
 export default async function CalendrierPage() {
   const supabase = await createClient()
@@ -25,7 +26,7 @@ export default async function CalendrierPage() {
   // Aggregate by day
   const dayMap = new Map<string, { points: number; activities: number; positive: number; negative: number; entries: { name: string; emoji: string; points: number }[] }>()
   for (const log of (logs ?? [])) {
-    const day = format(new Date(log.logged_at), 'yyyy-MM-dd')
+    const day = format(toParisDate(log.logged_at), 'yyyy-MM-dd')
     const existing = dayMap.get(day) ?? { points: 0, activities: 0, positive: 0, negative: 0, entries: [] }
     existing.points += log.points_earned
     existing.activities += 1
