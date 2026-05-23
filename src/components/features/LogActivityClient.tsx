@@ -53,8 +53,7 @@ export function LogActivityClient({ activities, userObjectives, userId }: Props)
   const uniqueActivities = useMemo(() => {
     const seen = new Set<string>()
     return activities.filter(activity => {
-      const categoryName = activity.category?.name ?? ''
-      const key = `${activity.name.trim().toLowerCase()}|${categoryName.trim().toLowerCase()}`
+      const key = activity.name.trim().toLowerCase()
       if (seen.has(key)) return false
       seen.add(key)
       return true

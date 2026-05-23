@@ -201,18 +201,20 @@ export default async function DashboardPage() {
                       member.user_id === user.id ? 'bg-violet-600/10' : 'hover:bg-gray-800/30'
                     )}
                   >
-                    <span className={cn('text-sm font-bold w-5 text-center', member.rank === 1 ? 'text-yellow-400' : 'text-gray-500')}>
+                    <span className={cn('text-sm font-bold w-5 text-center shrink-0', member.rank === 1 ? 'text-yellow-400' : 'text-gray-500')}>
                       {member.rank}
                     </span>
-                    <div className="w-7 h-7 rounded-full bg-gray-700 flex items-center justify-center text-xs font-bold overflow-hidden flex-shrink-0">
-                      {member.avatar_url
-                        ? <img src={member.avatar_url} alt={member.username} className="w-full h-full object-cover" />
-                        : member.username.charAt(0).toUpperCase()
-                      }
-                    </div>
-                    <span className={cn('flex-1 text-sm truncate', member.user_id === user.id ? 'text-violet-300 font-semibold' : 'text-white')}>
-                      {member.username}{member.user_id === user.id ? ' (toi)' : ''}
-                    </span>
+                    <Link href={`/profil/${member.username}`} className="flex items-center gap-2 flex-1 min-w-0 group">
+                      <div className="w-7 h-7 rounded-full bg-gray-700 flex items-center justify-center text-xs font-bold overflow-hidden flex-shrink-0">
+                        {member.avatar_url
+                          ? <img src={member.avatar_url} alt={member.username} className="w-full h-full object-cover" />
+                          : member.username.charAt(0).toUpperCase()
+                        }
+                      </div>
+                      <span className={cn('flex-1 text-sm truncate group-hover:underline', member.user_id === user.id ? 'text-violet-300 font-semibold' : 'text-white')}>
+                        {member.username}{member.user_id === user.id ? ' (toi)' : ''}
+                      </span>
+                    </Link>
                     <span className={cn('text-sm font-bold flex-shrink-0', member.rank === 1 ? 'text-yellow-400' : 'text-white')}>
                       {member.points} pts
                     </span>

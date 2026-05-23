@@ -178,18 +178,20 @@ export function GroupesClient({ groups, currentUserId }: { groups: Group[]; curr
                         return (
                           <div key={member.user_id} className="flex flex-col items-center gap-1.5">
                             {isFirst && <Crown size={20} className="text-yellow-400" />}
-                            <div className={cn(
-                              'w-14 h-14 rounded-full flex items-center justify-center text-lg font-black border-3 overflow-hidden',
-                              isFirst ? 'border-yellow-400 ring-2 ring-yellow-400/30' :
-                                member.rank === 2 ? 'border-gray-400' : 'border-amber-600',
-                              isMe && 'ring-2 ring-violet-500/50'
-                            )}>
-                              {member.avatar_url
-                                ? <img src={member.avatar_url} alt={member.username} className="w-full h-full object-cover" />
-                                : member.username.charAt(0).toUpperCase()
-                              }
-                            </div>
-                            <Link href={`/profil/${member.username}`} className={cn('text-xs font-bold hover:underline', isMe ? 'text-violet-400' : 'text-white')}>{member.username}</Link>
+                            <Link href={`/profil/${member.username}`} className="flex flex-col items-center gap-1.5 group">
+                              <div className={cn(
+                                'w-14 h-14 rounded-full flex items-center justify-center text-lg font-black border-3 overflow-hidden',
+                                isFirst ? 'border-yellow-400 ring-2 ring-yellow-400/30' :
+                                  member.rank === 2 ? 'border-gray-400' : 'border-amber-600',
+                                isMe && 'ring-2 ring-violet-500/50'
+                              )}>
+                                {member.avatar_url
+                                  ? <img src={member.avatar_url} alt={member.username} className="w-full h-full object-cover" />
+                                  : member.username.charAt(0).toUpperCase()
+                                }
+                              </div>
+                              <span className={cn('text-xs font-bold group-hover:underline', isMe ? 'text-violet-400' : 'text-white')}>{member.username}</span>
+                            </Link>
                             <p className={cn('text-sm font-black', isFirst ? 'text-yellow-400' : 'text-white')}>
                               {member.points} pts
                             </p>
@@ -208,14 +210,16 @@ export function GroupesClient({ groups, currentUserId }: { groups: Group[]; curr
                             member.user_id === currentUserId ? 'bg-violet-600/10' : 'hover:bg-gray-800/30'
                           )}
                         >
-                          <span className="text-sm font-bold text-gray-500 w-4">{member.rank}</span>
-                          <div className="w-7 h-7 rounded-full bg-gray-700 flex items-center justify-center text-xs font-bold overflow-hidden">
-                            {member.avatar_url
-                              ? <img src={member.avatar_url} alt={member.username} className="w-full h-full object-cover" />
-                              : member.username.charAt(0).toUpperCase()
-                            }
-                          </div>
-                          <Link href={`/profil/${member.username}`} className="flex-1 text-sm text-white hover:underline">{member.username}</Link>
+                          <span className="text-sm font-bold text-gray-500 w-4 shrink-0">{member.rank}</span>
+                          <Link href={`/profil/${member.username}`} className="flex items-center gap-2 flex-1 min-w-0 group">
+                            <div className="w-7 h-7 rounded-full bg-gray-700 flex items-center justify-center text-xs font-bold overflow-hidden shrink-0">
+                              {member.avatar_url
+                                ? <img src={member.avatar_url} alt={member.username} className="w-full h-full object-cover" />
+                                : member.username.charAt(0).toUpperCase()
+                              }
+                            </div>
+                            <span className="flex-1 text-sm text-white group-hover:underline">{member.username}</span>
+                          </Link>
                           <span className="text-sm font-bold text-white">{member.points} pts</span>
                         </div>
                       ))}

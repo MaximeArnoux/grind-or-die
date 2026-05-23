@@ -116,7 +116,7 @@ export default async function ProfilPage({ params }: { params: Promise<{ usernam
       )}
 
       {/* Weight chart */}
-      {weightLogs.length > 1 && (
+      {weightLogs.length >= 1 && (
         <Card>
           <CardHeader><CardTitle>Évolution du poids ⚖️</CardTitle></CardHeader>
           <CardContent>

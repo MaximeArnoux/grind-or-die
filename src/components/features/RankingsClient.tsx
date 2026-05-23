@@ -133,19 +133,21 @@ export function RankingsClient({ weeklyRanking, lifetimeRanking, chartData, week
                             return (
                               <div key={entry.user_id} className="flex flex-col items-center gap-1.5">
                                 {isFirst && <Crown size={20} className="text-yellow-400" />}
-                                <div className={cn(
-                                  'w-14 h-14 rounded-full flex items-center justify-center text-lg font-black border-3 overflow-hidden',
-                                  isFirst ? 'border-yellow-400 ring-2 ring-yellow-400/30' :
-                                    entry.rank === 2 ? 'border-gray-400' : 'border-amber-600',
-                                  isMe && 'ring-2 ring-violet-500/50'
-                                )}>
-                                  {entry.avatar_url
-                                    ? <img src={entry.avatar_url} alt={entry.username} className="w-full h-full object-cover" />
-                                    : entry.username.charAt(0).toUpperCase()
-                                  }
-                                </div>
-                                <Link href={`/profil/${entry.username}`} className={cn('text-xs font-bold truncate max-w-[72px] text-center hover:underline', isMe ? 'text-violet-400' : 'text-white')}>
-                                  {entry.username}
+                                <Link href={`/profil/${entry.username}`} className="flex flex-col items-center gap-1.5 group">
+                                  <div className={cn(
+                                    'w-14 h-14 rounded-full flex items-center justify-center text-lg font-black border-3 overflow-hidden',
+                                    isFirst ? 'border-yellow-400 ring-2 ring-yellow-400/30' :
+                                      entry.rank === 2 ? 'border-gray-400' : 'border-amber-600',
+                                    isMe && 'ring-2 ring-violet-500/50'
+                                  )}>
+                                    {entry.avatar_url
+                                      ? <img src={entry.avatar_url} alt={entry.username} className="w-full h-full object-cover" />
+                                      : entry.username.charAt(0).toUpperCase()
+                                    }
+                                  </div>
+                                  <span className={cn('text-xs font-bold truncate max-w-[72px] text-center group-hover:underline', isMe ? 'text-violet-400' : 'text-white')}>
+                                    {entry.username}
+                                  </span>
                                 </Link>
                                 <p className={cn('text-sm font-black', isFirst ? 'text-yellow-400' : 'text-white')}>
                                   {entry.points} pts
@@ -167,15 +169,17 @@ export function RankingsClient({ weeklyRanking, lifetimeRanking, chartData, week
                                 entry.user_id === currentUserId ? 'bg-violet-600/10 border border-violet-500/20' : 'hover:bg-gray-800/30'
                               )}
                             >
-                              <span className="text-sm font-bold text-gray-500 w-5 text-center">{entry.rank}</span>
-                              <div className="w-7 h-7 rounded-full bg-gray-700 flex items-center justify-center text-xs font-bold overflow-hidden">
-                                {entry.avatar_url
-                                  ? <img src={entry.avatar_url} alt={entry.username} className="w-full h-full object-cover" />
-                                  : entry.username.charAt(0).toUpperCase()
-                                }
-                              </div>
-                              <Link href={`/profil/${entry.username}`} className={cn('flex-1 text-sm hover:underline', entry.user_id === currentUserId ? 'text-violet-300 font-semibold' : 'text-white')}>
-                                {entry.username}
+                              <span className="text-sm font-bold text-gray-500 w-5 text-center shrink-0">{entry.rank}</span>
+                              <Link href={`/profil/${entry.username}`} className="flex items-center gap-2 flex-1 min-w-0 group">
+                                <div className="w-7 h-7 rounded-full bg-gray-700 flex items-center justify-center text-xs font-bold overflow-hidden shrink-0">
+                                  {entry.avatar_url
+                                    ? <img src={entry.avatar_url} alt={entry.username} className="w-full h-full object-cover" />
+                                    : entry.username.charAt(0).toUpperCase()
+                                  }
+                                </div>
+                                <span className={cn('flex-1 text-sm group-hover:underline', entry.user_id === currentUserId ? 'text-violet-300 font-semibold' : 'text-white')}>
+                                  {entry.username}
+                                </span>
                               </Link>
                               <span className="text-sm font-bold text-white">{entry.points} pts</span>
                             </div>
@@ -223,18 +227,20 @@ export function RankingsClient({ weeklyRanking, lifetimeRanking, chartData, week
                       return (
                         <div key={entry.user_id} className={cn('flex flex-col items-center gap-2', isFirst && 'order-2')}>
                           {isFirst && <span className="text-2xl">👑</span>}
-                          <div className={cn(
-                            'w-16 h-16 rounded-full flex items-center justify-center text-xl font-black border-4 overflow-hidden',
-                            entry.rank === 1 ? 'border-yellow-400 bg-yellow-400/20' :
-                              entry.rank === 2 ? 'border-gray-400 bg-gray-400/20' :
-                                'border-amber-600 bg-amber-600/20'
-                          )}>
-                            {entry.avatar_url
-                              ? <img src={entry.avatar_url} alt={entry.username} className="w-full h-full object-cover" />
-                              : entry.username.charAt(0).toUpperCase()
-                            }
-                          </div>
-                          <Link href={`/profil/${entry.username}`} className="text-white font-bold text-sm hover:underline">{entry.username}</Link>
+                          <Link href={`/profil/${entry.username}`} className="flex flex-col items-center gap-2 group">
+                            <div className={cn(
+                              'w-16 h-16 rounded-full flex items-center justify-center text-xl font-black border-4 overflow-hidden',
+                              entry.rank === 1 ? 'border-yellow-400 bg-yellow-400/20' :
+                                entry.rank === 2 ? 'border-gray-400 bg-gray-400/20' :
+                                  'border-amber-600 bg-amber-600/20'
+                            )}>
+                              {entry.avatar_url
+                                ? <img src={entry.avatar_url} alt={entry.username} className="w-full h-full object-cover" />
+                                : entry.username.charAt(0).toUpperCase()
+                              }
+                            </div>
+                            <span className="text-white font-bold text-sm group-hover:underline">{entry.username}</span>
+                          </Link>
                           <p className={cn('text-lg font-black', entry.rank === 1 ? 'text-yellow-400' : 'text-white')}>
                             {entry.points.toLocaleString('fr-FR')} pts
                           </p>
@@ -259,14 +265,16 @@ export function RankingsClient({ weeklyRanking, lifetimeRanking, chartData, week
                           entry.user_id === currentUserId ? 'bg-violet-600/10 border border-violet-500/20' : 'hover:bg-gray-800/50'
                         )}
                       >
-                        <span className="text-sm font-bold text-gray-500 w-5">{entry.rank}</span>
-                        <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-sm font-bold overflow-hidden">
-                          {entry.avatar_url
-                            ? <img src={entry.avatar_url} alt={entry.username} className="w-full h-full object-cover" />
-                            : entry.username.charAt(0).toUpperCase()
-                          }
-                        </div>
-                        <Link href={`/profil/${entry.username}`} className="flex-1 text-sm font-medium text-white hover:underline">{entry.username}</Link>
+                        <span className="text-sm font-bold text-gray-500 w-5 shrink-0">{entry.rank}</span>
+                        <Link href={`/profil/${entry.username}`} className="flex items-center gap-2 flex-1 min-w-0 group">
+                          <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-sm font-bold overflow-hidden shrink-0">
+                            {entry.avatar_url
+                              ? <img src={entry.avatar_url} alt={entry.username} className="w-full h-full object-cover" />
+                              : entry.username.charAt(0).toUpperCase()
+                            }
+                          </div>
+                          <span className="flex-1 text-sm font-medium text-white group-hover:underline">{entry.username}</span>
+                        </Link>
                         <span className="text-sm font-bold text-white">{entry.points.toLocaleString('fr-FR')} pts</span>
                       </div>
                     ))}
