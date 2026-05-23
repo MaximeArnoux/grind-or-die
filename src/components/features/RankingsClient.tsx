@@ -144,9 +144,9 @@ export function RankingsClient({ weeklyRanking, lifetimeRanking, chartData, week
                                     : entry.username.charAt(0).toUpperCase()
                                   }
                                 </div>
-                                <p className={cn('text-xs font-bold truncate max-w-[72px] text-center', isMe ? 'text-violet-400' : 'text-white')}>
+                                <Link href={`/profil/${entry.username}`} className={cn('text-xs font-bold truncate max-w-[72px] text-center hover:underline', isMe ? 'text-violet-400' : 'text-white')}>
                                   {entry.username}
-                                </p>
+                                </Link>
                                 <p className={cn('text-sm font-black', isFirst ? 'text-yellow-400' : 'text-white')}>
                                   {entry.points} pts
                                 </p>
@@ -174,9 +174,9 @@ export function RankingsClient({ weeklyRanking, lifetimeRanking, chartData, week
                                   : entry.username.charAt(0).toUpperCase()
                                 }
                               </div>
-                              <span className={cn('flex-1 text-sm', entry.user_id === currentUserId ? 'text-violet-300 font-semibold' : 'text-white')}>
+                              <Link href={`/profil/${entry.username}`} className={cn('flex-1 text-sm hover:underline', entry.user_id === currentUserId ? 'text-violet-300 font-semibold' : 'text-white')}>
                                 {entry.username}
-                              </span>
+                              </Link>
                               <span className="text-sm font-bold text-white">{entry.points} pts</span>
                             </div>
                           ))}
@@ -234,7 +234,7 @@ export function RankingsClient({ weeklyRanking, lifetimeRanking, chartData, week
                               : entry.username.charAt(0).toUpperCase()
                             }
                           </div>
-                          <p className="text-white font-bold text-sm">{entry.username}</p>
+                          <Link href={`/profil/${entry.username}`} className="text-white font-bold text-sm hover:underline">{entry.username}</Link>
                           <p className={cn('text-lg font-black', entry.rank === 1 ? 'text-yellow-400' : 'text-white')}>
                             {entry.points.toLocaleString('fr-FR')} pts
                           </p>
@@ -266,7 +266,7 @@ export function RankingsClient({ weeklyRanking, lifetimeRanking, chartData, week
                             : entry.username.charAt(0).toUpperCase()
                           }
                         </div>
-                        <span className="flex-1 text-sm font-medium text-white">{entry.username}</span>
+                        <Link href={`/profil/${entry.username}`} className="flex-1 text-sm font-medium text-white hover:underline">{entry.username}</Link>
                         <span className="text-sm font-bold text-white">{entry.points.toLocaleString('fr-FR')} pts</span>
                       </div>
                     ))}

@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { Badge } from '@/components/ui/Badge'
 import { cn } from '@/lib/utils'
+import Link from 'next/link'
 import { createGroup, joinGroup, inviteByUsername, leaveGroup, deleteGroup } from '@/app/(app)/groupes/actions'
 
 interface RankingMember {
@@ -188,7 +189,7 @@ export function GroupesClient({ groups, currentUserId }: { groups: Group[]; curr
                                 : member.username.charAt(0).toUpperCase()
                               }
                             </div>
-                            <p className={cn('text-xs font-bold', isMe ? 'text-violet-400' : 'text-white')}>{member.username}</p>
+                            <Link href={`/profil/${member.username}`} className={cn('text-xs font-bold hover:underline', isMe ? 'text-violet-400' : 'text-white')}>{member.username}</Link>
                             <p className={cn('text-sm font-black', isFirst ? 'text-yellow-400' : 'text-white')}>
                               {member.points} pts
                             </p>
@@ -214,7 +215,7 @@ export function GroupesClient({ groups, currentUserId }: { groups: Group[]; curr
                               : member.username.charAt(0).toUpperCase()
                             }
                           </div>
-                          <span className="flex-1 text-sm text-white">{member.username}</span>
+                          <Link href={`/profil/${member.username}`} className="flex-1 text-sm text-white hover:underline">{member.username}</Link>
                           <span className="text-sm font-bold text-white">{member.points} pts</span>
                         </div>
                       ))}
