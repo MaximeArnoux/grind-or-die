@@ -29,9 +29,10 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const now = new Date()
-  const weekStart = startOfWeek(now, { weekStartsOn: 1 })
-  const todayStart = new Date(now.setHours(0, 0, 0, 0))
+  // Use Paris timezone for all date boundaries
+  const nowParis = new Date(new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }))
+  const weekStart = startOfWeek(nowParis, { weekStartsOn: 1 })
+  const todayStart = new Date(nowParis); todayStart.setHours(0, 0, 0, 0)
 
   // Parallel data fetching
   const [profileRes, streakRes, totalPointsRes, weekPointsRes, todayPointsRes, recentLogsRes, myGroupMembershipsRes, weeklyChartRes] = await Promise.all([
@@ -128,8 +129,11 @@ export default async function DashboardPage() {
   const malusPercent = breakdownTotal > 0 ? (Math.abs(weekMalus) / breakdownTotal) * 100 : 0
 
   // Group ranking (simplified)
-  const greetingHour = new Date().getHours()
-  const greeting = greetingHour < 12 ? 'Bonjour' : greetingHour < 18 ? 'Salut' : 'Bonsoir'
+  const greetingHour = parseInt(
+    new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', hour: 'numeric', hour12: false }).format(new Date()),
+    10
+  )
+  const greeting = greetingHour < 6 ? 'Bonsoir' : greetingHour < 12 ? 'Bonjour' : greetingHour < 18 ? 'Salut' : 'Bonsoir'
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">

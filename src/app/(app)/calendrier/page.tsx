@@ -8,7 +8,7 @@ export default async function CalendrierPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const now = new Date()
+  const now = new Date(new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }))
   const monthStart = startOfMonth(now)
   const monthEnd = endOfMonth(now)
 

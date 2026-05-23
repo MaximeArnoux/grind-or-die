@@ -8,7 +8,7 @@ export default async function ClassementsPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 })
+  const weekStart = startOfWeek(new Date(new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' })), { weekStartsOn: 1 })
 
   // National rankings + streak (parallel)
   const [weeklyLogsRes, lifetimeLogsRes, streakRes, groupMembershipsRes] = await Promise.all([
