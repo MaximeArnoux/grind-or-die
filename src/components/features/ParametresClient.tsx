@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, Trash2, Camera } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -22,6 +22,11 @@ interface Props {
 export function ParametresClient({ profile, objectives, activities, latestWeight, userId }: Props) {
   const router = useRouter()
   const supabase = createClient()
+
+  // Avatar
+  const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url ?? null)
+  const [avatarLoading, setAvatarLoading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Profile form
   const [username, setUsername] = useState(profile?.username ?? '')
@@ -73,6 +78,25 @@ export function ParametresClient({ profile, objectives, activities, latestWeight
     }
   }
 
+  async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setAvatarLoading(true)
+    try {
+      const ext = file.name.split('.').pop()
+      const path = `${userId}/avatar.${ext}`
+      const { error } = await supabase.storage.from('avatars').upload(path, file, { upsert: true })
+      if (error) throw error
+      const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path)
+      const urlWithCache = `${publicUrl}?t=${Date.now()}`
+      await supabase.from('profiles').update({ avatar_url: urlWithCache }).eq('id', userId)
+      setAvatarUrl(urlWithCache)
+      router.refresh()
+    } finally {
+      setAvatarLoading(false)
+    }
+  }
+
   async function addObjective() {
     if (!objActivity) return
     setObjLoading(true)
@@ -113,14 +137,33 @@ export function ParametresClient({ profile, objectives, activities, latestWeight
         <CardContent className="space-y-4">
           <div className="flex items-center gap-4">
             <div className="relative">
-              <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-2xl font-black text-white">
-                {username.charAt(0).toUpperCase()}
-              </div>
-              <button className="absolute -bottom-1 -right-1 w-6 h-6 bg-gray-700 rounded-full flex items-center justify-center">
-                <Camera size={11} className="text-gray-300" />
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="avatar" className="w-16 h-16 rounded-xl object-cover" />
+              ) : (
+                <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-2xl font-black text-white">
+                  {username.charAt(0).toUpperCase()}
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={avatarLoading}
+                className="absolute -bottom-1 -right-1 w-6 h-6 bg-gray-700 hover:bg-gray-600 rounded-full flex items-center justify-center transition-colors"
+              >
+                {avatarLoading
+                  ? <span className="text-[8px] text-white animate-pulse">...</span>
+                  : <Camera size={11} className="text-gray-300" />
+                }
               </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarUpload}
+              />
             </div>
-            <p className="text-xs text-gray-500">Photo de profil (bientôt disponible)</p>
+            <p className="text-xs text-gray-500">Clique sur 📷 pour changer ta photo</p>
           </div>
           <div className="grid sm:grid-cols-2 gap-4">
             <Input label="Pseudo" value={username} onChange={e => setUsername(e.target.value)} placeholder="monpseudo" />
