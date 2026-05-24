@@ -17,8 +17,7 @@ export const DEFAULT_ACTIVITIES = [
   { name: '2km de vélo', emoji: '🚴', points: 1, type: 'positive', category: 'Fitness', can_repeat_daily: true, max_per_day: 20 },
   { name: '10K steps', emoji: '🚶', points: 2, type: 'positive', category: 'Fitness', can_repeat_daily: false, max_per_day: 1 },
   { name: 'Natation 30min', emoji: '🏊', points: 4, type: 'positive', category: 'Fitness', can_repeat_daily: false, max_per_day: 1 },
-  { name: 'HIIT 20min', emoji: '💪', points: 3, type: 'positive', category: 'Fitness', can_repeat_daily: false, max_per_day: 1 },
-  { name: '50 pompes', emoji: '💪', points: 2, type: 'positive', category: 'Fitness', can_repeat_daily: true, max_per_day: 3 },
+{ name: '50 pompes', emoji: '💪', points: 2, type: 'positive', category: 'Fitness', can_repeat_daily: true, max_per_day: 3 },
   { name: 'Stretching 15min', emoji: '🧘', points: 1, type: 'positive', category: 'Fitness', can_repeat_daily: false, max_per_day: 1 },
   { name: 'Sport collectif', emoji: '⚽', points: 3, type: 'positive', category: 'Fitness', can_repeat_daily: false, max_per_day: 1 },
   { name: '10km course', emoji: '🏅', points: 5, type: 'positive', category: 'Fitness', can_repeat_daily: false, max_per_day: 1 },
@@ -27,12 +26,8 @@ export const DEFAULT_ACTIVITIES = [
   { name: '3L d\'eau', emoji: '💧', points: 2, type: 'positive', category: 'Nutrition', can_repeat_daily: false, max_per_day: 1 },
   { name: 'Repas sain', emoji: '🥗', points: 7, type: 'positive', category: 'Nutrition', can_repeat_daily: true, max_per_day: 3 },
   { name: 'Jeûne intermittent', emoji: '⏰', points: 3, type: 'positive', category: 'Nutrition', can_repeat_daily: false, max_per_day: 1 },
-  { name: 'Zéro sucre ajouté', emoji: '🚫', points: 3, type: 'positive', category: 'Nutrition', can_repeat_daily: false, max_per_day: 1 },
-  { name: 'Zéro alcool', emoji: '🚱', points: 2, type: 'positive', category: 'Nutrition', can_repeat_daily: false, max_per_day: 1 },
-  { name: 'Deliveroo', emoji: '🛵', points: -5, type: 'negative', category: 'Nutrition', can_repeat_daily: false, max_per_day: 1 },
+{ name: 'Deliveroo', emoji: '🛵', points: -5, type: 'negative', category: 'Nutrition', can_repeat_daily: false, max_per_day: 1 },
   { name: 'Cheat meal', emoji: '🍔', points: -5, type: 'negative', category: 'Nutrition', can_repeat_daily: false, max_per_day: 1 },
-  { name: 'Fast food', emoji: '🍟', points: -7, type: 'negative', category: 'Nutrition', can_repeat_daily: false, max_per_day: 1 },
-  { name: 'Soirée pizza', emoji: '🍕', points: -4, type: 'negative', category: 'Nutrition', can_repeat_daily: false, max_per_day: 1 },
 
   // SOMMEIL
   { name: '8h sommeil', emoji: '😴', points: 3, type: 'positive', category: 'Sommeil', can_repeat_daily: false, max_per_day: 1 },
@@ -48,10 +43,8 @@ export const DEFAULT_ACTIVITIES = [
   { name: 'Réviser 2h', emoji: '📚', points: 4, type: 'positive', category: 'Études', can_repeat_daily: true, max_per_day: 4 },
   { name: 'Cours en ligne', emoji: '💻', points: 3, type: 'positive', category: 'Études', can_repeat_daily: true, max_per_day: 3 },
   { name: '15min lecture', emoji: '📖', points: 2, type: 'positive', category: 'Études', can_repeat_daily: false, max_per_day: 1 },
-  { name: 'Lire 1h', emoji: '📕', points: 3, type: 'positive', category: 'Études', can_repeat_daily: false, max_per_day: 1 },
-  { name: 'Flashcards', emoji: '📝', points: 1, type: 'positive', category: 'Études', can_repeat_daily: true, max_per_day: 3 },
+{ name: 'Flashcards', emoji: '📝', points: 1, type: 'positive', category: 'Études', can_repeat_daily: true, max_per_day: 3 },
   { name: 'Finir un module', emoji: '🎓', points: 4, type: 'positive', category: 'Études', can_repeat_daily: true, max_per_day: 2 },
-  { name: 'Prendre des notes de cours', emoji: '✏️', points: 2, type: 'positive', category: 'Études', can_repeat_daily: true, max_per_day: 4 },
 
   // DEV PERSO
   { name: 'Méditation 10min', emoji: '🧘', points: 2, type: 'positive', category: 'Dev perso', can_repeat_daily: false, max_per_day: 1 },
@@ -67,11 +60,8 @@ export const DEFAULT_ACTIVITIES = [
 
   // LOOKSMAX
   { name: 'Skincare routine', emoji: '🧴', points: 2, type: 'positive', category: 'Looksmax', can_repeat_daily: false, max_per_day: 1 },
-  { name: 'Coiffure soignée', emoji: '💇', points: 1, type: 'positive', category: 'Looksmax', can_repeat_daily: false, max_per_day: 1 },
-  { name: 'Tenue stylée', emoji: '👔', points: 1, type: 'positive', category: 'Looksmax', can_repeat_daily: false, max_per_day: 1 },
-  { name: 'Hygiène complète', emoji: '🦷', points: 2, type: 'positive', category: 'Looksmax', can_repeat_daily: false, max_per_day: 1 },
+{ name: 'Hygiène complète', emoji: '🦷', points: 2, type: 'positive', category: 'Looksmax', can_repeat_daily: false, max_per_day: 1 },
   { name: 'Compléments alimentaires', emoji: '💊', points: 1, type: 'positive', category: 'Looksmax', can_repeat_daily: false, max_per_day: 1 },
-  { name: 'Rasage/entretien', emoji: '🪒', points: 1, type: 'positive', category: 'Looksmax', can_repeat_daily: false, max_per_day: 1 },
 
   // ENTREPRENEURIAT
   { name: 'Travailler 1h sur projet', emoji: '💼', points: 3, type: 'positive', category: 'Entrepreneuriat', can_repeat_daily: true, max_per_day: 8 },

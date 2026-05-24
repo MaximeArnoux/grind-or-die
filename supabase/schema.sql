@@ -360,8 +360,7 @@ begin
     ('2km de vélo', '🚴', 1, 'positive', fitness_id, true, 20),
     ('10K steps', '🚶', 2, 'positive', fitness_id, false, 1),
     ('Natation 30min', '🏊', 4, 'positive', fitness_id, false, 1),
-    ('HIIT 20min', '💪', 3, 'positive', fitness_id, false, 1),
-    ('50 pompes', '💪', 2, 'positive', fitness_id, true, 3),
+('50 pompes', '💪', 2, 'positive', fitness_id, true, 3),
     ('Stretching 15min', '🧘', 1, 'positive', fitness_id, false, 1),
     ('Sport collectif', '⚽', 3, 'positive', fitness_id, false, 1),
     ('10km course', '🏅', 5, 'positive', fitness_id, false, 1)
@@ -372,18 +371,13 @@ begin
     ('3L d''eau', '💧', 2, 'positive', nutrition_id, false, 1),
     ('Repas sain', '🥗', 7, 'positive', nutrition_id, true, 3),
     ('Jeûne intermittent', '⏰', 3, 'positive', nutrition_id, false, 1),
-    ('Zéro sucre ajouté', '🚫', 3, 'positive', nutrition_id, false, 1),
-    ('Zéro alcool', '🚱', 2, 'positive', nutrition_id, false, 1),
     ('Deliveroo', '🛵', -5, 'negative', nutrition_id, false, 1),
-    ('Cheat meal', '🍔', -5, 'negative', nutrition_id, false, 1),
-    ('Fast food', '🍟', -7, 'negative', nutrition_id, false, 1),
-    ('Soirée pizza', '🍕', -4, 'negative', nutrition_id, false, 1)
+    ('Cheat meal', '🍔', -5, 'negative', nutrition_id, false, 1)
   on conflict do nothing;
 
   -- SOMMEIL
   insert into activities (name, emoji, points, type, category_id, can_repeat_daily, max_per_day) values
-    ('7h+ de sommeil', '😴', 3, 'positive', sommeil_id, false, 1),
-    ('Réveil avant 9h', '⏰', 2, 'positive', sommeil_id, false, 1),
+('Réveil avant 9h', '⏰', 2, 'positive', sommeil_id, false, 1),
     ('Coucher avant 01h', '🌙', 5, 'positive', sommeil_id, false, 1),
     ('Sieste 20min', '💤', 1, 'positive', sommeil_id, false, 1),
     ('Moins de 6h sommeil', '😵', -3, 'negative', sommeil_id, false, 1),
@@ -397,10 +391,8 @@ begin
     ('Réviser 2h', '📚', 4, 'positive', etudes_id, true, 4),
     ('Cours en ligne', '💻', 3, 'positive', etudes_id, true, 3),
     ('15min lecture', '📖', 2, 'positive', etudes_id, false, 1),
-    ('Lire 1h', '📕', 3, 'positive', etudes_id, false, 1),
     ('Flashcards', '📝', 1, 'positive', etudes_id, true, 3),
-    ('Finir un module', '🎓', 4, 'positive', etudes_id, true, 2),
-    ('Prendre des notes de cours', '✏️', 2, 'positive', etudes_id, true, 4)
+    ('Finir un module', '🎓', 4, 'positive', etudes_id, true, 2)
   on conflict do nothing;
 
   -- DEV PERSO
@@ -420,11 +412,8 @@ begin
   -- LOOKSMAX
   insert into activities (name, emoji, points, type, category_id, can_repeat_daily, max_per_day) values
     ('Skincare routine', '🧴', 2, 'positive', looksmax_id, false, 1),
-    ('Coiffure soignée', '💇', 1, 'positive', looksmax_id, false, 1),
-    ('Tenue stylée', '👔', 1, 'positive', looksmax_id, false, 1),
     ('Hygiène complète', '🦷', 2, 'positive', looksmax_id, false, 1),
-    ('Compléments alimentaires', '💊', 1, 'positive', looksmax_id, false, 1),
-    ('Rasage/entretien', '🪒', 1, 'positive', looksmax_id, false, 1)
+    ('Compléments alimentaires', '💊', 1, 'positive', looksmax_id, false, 1)
   on conflict do nothing;
 
   -- ENTREPRENEURIAT
