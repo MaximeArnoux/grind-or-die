@@ -154,3 +154,19 @@ export async function submitVote(
   revalidatePath('/parametres')
   return { success: true }
 }
+
+export async function cancelVoteRequest(requestId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Non authentifié' }
+
+  const { error } = await supabase
+    .from('objective_vote_requests')
+    .delete()
+    .eq('id', requestId)
+    .eq('requester_id', user.id)
+
+  if (error) return { error: error.message }
+  revalidatePath('/parametres')
+  return { success: true }
+}

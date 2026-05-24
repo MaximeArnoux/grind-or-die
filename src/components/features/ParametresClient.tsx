@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { Badge } from '@/components/ui/Badge'
-import { createVoteRequest } from '@/app/(app)/parametres/actions'
+import { createVoteRequest, cancelVoteRequest } from '@/app/(app)/parametres/actions'
 import type { Profile, Activity } from '@/types'
 
 interface Props {
@@ -269,6 +269,12 @@ export function ParametresClient({ profile, objectives, pendingVoteRequests, act
                         </p>
                       )}
                     </div>
+                    <button
+                      onClick={async () => { await cancelVoteRequest(req.id); router.refresh() }}
+                      className="p-1.5 hover:bg-red-500/10 rounded-lg text-gray-500 hover:text-red-400 transition-colors"
+                    >
+                      <Trash2 size={13} />
+                    </button>
                   </div>
                 )
               })}
