@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Users, Copy, Check, LogIn, Crown, LogOut, Trash2 } from 'lucide-react'
+import { Plus, Users, Copy, Check, LogIn, Crown, LogOut, Trash2, Globe, Lock, Pencil } from 'lucide-react'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -9,7 +9,7 @@ import { Modal } from '@/components/ui/Modal'
 import { Badge } from '@/components/ui/Badge'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
-import { createGroup, joinGroup, inviteByUsername, leaveGroup, deleteGroup } from '@/app/(app)/groupes/actions'
+import { createGroup, updateGroup, joinGroup, joinPublicGroup, inviteByUsername, leaveGroup, deleteGroup } from '@/app/(app)/groupes/actions'
 
 interface RankingMember {
   user_id: string
@@ -25,15 +25,24 @@ interface Group {
   name: string
   description: string | null
   invite_code: string
+  is_public: boolean
   max_members: number
   role: string
   ranking: RankingMember[]
   members: unknown[]
 }
 
+export interface PublicGroup {
+  id: string
+  name: string
+  description: string | null
+  member_count: number
+  max_members: number
+}
+
 type ConfirmAction = { type: 'leave' | 'delete'; group: Group } | null
 
-export function GroupesClient({ groups, currentUserId }: { groups: Group[]; currentUserId: string }) {
+export function GroupesClient({ groups, publicGroups, currentUserId }: { groups: Group[]; publicGroups: PublicGroup[]; currentUserId: string }) {
   const [showCreate, setShowCreate] = useState(false)
   const [showJoin, setShowJoin] = useState(false)
   const [confirm, setConfirm] = useState<ConfirmAction>(null)
@@ -46,20 +55,62 @@ export function GroupesClient({ groups, currentUserId }: { groups: Group[]; curr
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
+  // Create group
+  const [isPublicCreate, setIsPublicCreate] = useState(false)
+  const [createPassword, setCreatePassword] = useState('')
+
+  // Join with code
+  const [joinPassword, setJoinPassword] = useState('')
+
+  // Edit group
+  const [showEdit, setShowEdit] = useState(false)
+  const [editGroup, setEditGroup] = useState<Group | null>(null)
+  const [editName, setEditName] = useState('')
+  const [editIsPublic, setEditIsPublic] = useState(false)
+  const [editPassword, setEditPassword] = useState('')
+
   async function handleCreate() {
     if (!groupName.trim()) return
+    if (!isPublicCreate && !createPassword.trim()) { setError('Un mot de passe est requis pour un groupe privé'); return }
     setLoading(true); setError('')
-    const result = await createGroup(groupName.trim(), groupDesc.trim() || null)
+    const result = await createGroup(groupName.trim(), groupDesc.trim() || null, isPublicCreate, createPassword)
     setLoading(false)
-    if (result.error) { setError(result.error) } else { setShowCreate(false); setGroupName(''); setGroupDesc('') }
+    if (result.error) { setError(result.error) } else { setShowCreate(false); setGroupName(''); setGroupDesc(''); setIsPublicCreate(false); setCreatePassword('') }
   }
 
   async function handleJoin() {
     if (!inviteCode.trim()) return
     setLoading(true); setError('')
-    const result = await joinGroup(inviteCode)
+    const result = await joinGroup(inviteCode, joinPassword || undefined)
     setLoading(false)
-    if (result.error) { setError(result.error) } else { setShowJoin(false); setInviteCode('') }
+    if (result.error) { setError(result.error) } else { setShowJoin(false); setInviteCode(''); setJoinPassword('') }
+  }
+
+  async function handleJoinPublic(groupId: string) {
+    setLoading(true); setError('')
+    const result = await joinPublicGroup(groupId)
+    setLoading(false)
+    if (result.error) { setError(result.error) }
+  }
+
+  async function handleEditGroup() {
+    if (!editGroup || !editName.trim()) return
+    if (!editIsPublic && !editPassword.trim()) {
+      // Keep existing password if field is empty and group stays private — no error
+    }
+    setLoading(true); setError('')
+    const result = await updateGroup(editGroup.id, editName, editIsPublic, editPassword || undefined)
+    setLoading(false)
+    if (result.error) { setError(result.error) } else { setShowEdit(false); setEditGroup(null); setEditPassword('') }
+  }
+
+  function openEdit(group: Group) {
+    setEditGroup(group)
+    setEditName(group.name)
+    setEditIsPublic(group.is_public)
+    setEditPassword('')
+    setError('')
+    setShowEdit(true)
   }
 
   async function handleInvite(groupId: string) {
@@ -108,6 +159,31 @@ export function GroupesClient({ groups, currentUserId }: { groups: Group[]; curr
         </Button>
       </div>
 
+      {/* Public groups available to join */}
+      {publicGroups.length > 0 && (
+        <div>
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Groupes publics</p>
+          <div className="space-y-2">
+            {publicGroups.map(pg => (
+              <div key={pg.id} className="flex items-center justify-between p-4 rounded-xl border border-gray-800 bg-gray-900">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Globe size={13} className="text-green-400" />
+                    <p className="text-sm font-semibold text-white">{pg.name}</p>
+                  </div>
+                  {pg.description && <p className="text-xs text-gray-500 mt-0.5">{pg.description}</p>}
+                  <p className="text-xs text-gray-600 mt-0.5">{pg.member_count}/{pg.max_members} membres</p>
+                </div>
+                <Button size="sm" onClick={() => handleJoinPublic(pg.id)} loading={loading}>
+                  Rejoindre
+                </Button>
+              </div>
+            ))}
+          </div>
+          {error && <p className="text-sm text-red-400 mt-2">{error}</p>}
+        </div>
+      )}
+
       {/* Groups list */}
       {groups.length === 0 ? (
         <Card className="py-16 text-center">
@@ -130,6 +206,15 @@ export function GroupesClient({ groups, currentUserId }: { groups: Group[]; curr
                     <p className="text-xs text-gray-600 mt-1">{group.members.length}/{group.max_members} membres</p>
                   </div>
                   <div className="flex items-center gap-2">
+                    {group.role === 'admin' && (
+                      <button
+                        onClick={() => openEdit(group)}
+                        className="p-1.5 bg-gray-800 hover:bg-gray-700 rounded-xl text-gray-400 hover:text-white transition-colors"
+                        title="Modifier le groupe"
+                      >
+                        <Pencil size={13} />
+                      </button>
+                    )}
                     <button
                       onClick={() => copyCode(group.invite_code)}
                       className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 rounded-xl text-xs text-gray-400 hover:text-white transition-colors"
@@ -137,6 +222,9 @@ export function GroupesClient({ groups, currentUserId }: { groups: Group[]; curr
                       {copiedCode === group.invite_code ? <Check size={12} className="text-green-400" /> : <Copy size={12} />}
                       {group.invite_code}
                     </button>
+                    <span className={cn('text-xs px-2 py-1 rounded-lg', group.is_public ? 'bg-green-500/10 text-green-400' : 'bg-gray-700 text-gray-500')}>
+                      {group.is_public ? <Globe size={11} className="inline" /> : <Lock size={11} className="inline" />}
+                    </span>
                   </div>
                 </div>
               </CardHeader>
@@ -255,6 +343,26 @@ export function GroupesClient({ groups, currentUserId }: { groups: Group[]; curr
         <div className="space-y-4">
           <Input label="Nom du groupe" value={groupName} onChange={e => setGroupName(e.target.value)} placeholder="Les Grinders" />
           <Input label="Description (optionnel)" value={groupDesc} onChange={e => setGroupDesc(e.target.value)} placeholder="On va tous devenir des machines" />
+          <div>
+            <p className="text-sm font-medium text-gray-300 mb-2">Visibilité</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setIsPublicCreate(true)}
+                className={cn('flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium border transition-colors', isPublicCreate ? 'bg-green-500/10 border-green-500/40 text-green-400' : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-white')}
+              >
+                <Globe size={14} /> Public
+              </button>
+              <button
+                onClick={() => setIsPublicCreate(false)}
+                className={cn('flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium border transition-colors', !isPublicCreate ? 'bg-violet-500/10 border-violet-500/40 text-violet-400' : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-white')}
+              >
+                <Lock size={14} /> Privé
+              </button>
+            </div>
+          </div>
+          {!isPublicCreate && (
+            <Input label="Mot de passe" type="password" value={createPassword} onChange={e => setCreatePassword(e.target.value)} placeholder="Mot de passe du groupe" />
+          )}
           <p className="text-xs text-gray-600">Maximum 10 membres. Un code d&apos;invitation sera généré automatiquement.</p>
           {error && <p className="text-sm text-red-400">{error}</p>}
           <div className="flex gap-3">
@@ -265,7 +373,7 @@ export function GroupesClient({ groups, currentUserId }: { groups: Group[]; curr
       </Modal>
 
       {/* Join modal */}
-      <Modal open={showJoin} onClose={() => setShowJoin(false)} title="Rejoindre un groupe">
+      <Modal open={showJoin} onClose={() => setShowJoin(false)} title="Rejoindre un groupe privé">
         <div className="space-y-4">
           <Input
             label="Code d'invitation"
@@ -274,10 +382,55 @@ export function GroupesClient({ groups, currentUserId }: { groups: Group[]; curr
             placeholder="ABC12345"
             className="uppercase tracking-widest font-mono"
           />
+          <Input
+            label="Mot de passe"
+            type="password"
+            value={joinPassword}
+            onChange={e => setJoinPassword(e.target.value)}
+            placeholder="Mot de passe du groupe"
+          />
           {error && <p className="text-sm text-red-400">{error}</p>}
           <div className="flex gap-3">
             <Button variant="secondary" className="flex-1" onClick={() => setShowJoin(false)}>Annuler</Button>
             <Button className="flex-1" onClick={handleJoin} loading={loading}>Rejoindre</Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Edit group modal */}
+      <Modal open={showEdit} onClose={() => { setShowEdit(false); setEditGroup(null); setError('') }} title="Modifier le groupe">
+        <div className="space-y-4">
+          <Input label="Nom du groupe" value={editName} onChange={e => setEditName(e.target.value)} placeholder="Nom du groupe" />
+          <div>
+            <p className="text-sm font-medium text-gray-300 mb-2">Visibilité</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setEditIsPublic(true)}
+                className={cn('flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium border transition-colors', editIsPublic ? 'bg-green-500/10 border-green-500/40 text-green-400' : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-white')}
+              >
+                <Globe size={14} /> Public
+              </button>
+              <button
+                onClick={() => setEditIsPublic(false)}
+                className={cn('flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium border transition-colors', !editIsPublic ? 'bg-violet-500/10 border-violet-500/40 text-violet-400' : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-white')}
+              >
+                <Lock size={14} /> Privé
+              </button>
+            </div>
+          </div>
+          {!editIsPublic && (
+            <Input
+              label="Nouveau mot de passe (laisser vide pour garder l'actuel)"
+              type="password"
+              value={editPassword}
+              onChange={e => setEditPassword(e.target.value)}
+              placeholder="Nouveau mot de passe"
+            />
+          )}
+          {error && <p className="text-sm text-red-400">{error}</p>}
+          <div className="flex gap-3">
+            <Button variant="secondary" className="flex-1" onClick={() => { setShowEdit(false); setEditGroup(null) }}>Annuler</Button>
+            <Button className="flex-1" onClick={handleEditGroup} loading={loading}>Enregistrer</Button>
           </div>
         </div>
       </Modal>

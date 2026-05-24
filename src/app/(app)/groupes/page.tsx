@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { GroupesClient } from '@/components/features/GroupesClient'
+import { GroupesClient, type PublicGroup } from '@/components/features/GroupesClient'
 import { startOfWeek } from 'date-fns'
 
 export default async function GroupesPage() {
@@ -18,6 +18,24 @@ export default async function GroupesPage() {
 
   const groupIds = (memberships ?? []).map((m: any) => m.group_id)
 
+  // Fetch public groups the user is NOT already in
+  const publicGroupsQuery = supabase
+    .from('groups')
+    .select('id, name, description, max_members, group_members(count)')
+    .eq('is_public', true)
+
+  const { data: publicGroupsRaw } = groupIds.length > 0
+    ? await publicGroupsQuery.not('id', 'in', `(${groupIds.join(',')})`)
+    : await publicGroupsQuery
+
+  const publicGroups: PublicGroup[] = (publicGroupsRaw ?? []).map((g: any) => ({
+    id: g.id,
+    name: g.name,
+    description: g.description,
+    max_members: g.max_members,
+    member_count: Array.isArray(g.group_members) ? (g.group_members[0]?.count ?? 0) : 0,
+  }))
+
   if (groupIds.length === 0) {
     return (
       <div className="max-w-5xl mx-auto space-y-6">
@@ -25,7 +43,7 @@ export default async function GroupesPage() {
           <h1 className="text-2xl font-black text-white">Groupes</h1>
           <p className="text-sm text-gray-500 mt-0.5">Défie tes amis et vois qui est le plus lock in</p>
         </div>
-        <GroupesClient groups={[]} currentUserId={user.id} />
+        <GroupesClient groups={[]} publicGroups={publicGroups} currentUserId={user.id} />
       </div>
     )
   }
@@ -105,7 +123,7 @@ export default async function GroupesPage() {
         <h1 className="text-2xl font-black text-white">Groupes</h1>
         <p className="text-sm text-gray-500 mt-0.5">Défie tes amis et vois qui est le plus lock in</p>
       </div>
-      <GroupesClient groups={validGroups} currentUserId={user.id} />
+      <GroupesClient groups={validGroups} publicGroups={publicGroups} currentUserId={user.id} />
     </div>
   )
 }
