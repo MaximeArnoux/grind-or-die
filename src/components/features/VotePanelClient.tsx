@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, useCallback } from 'react'
 import { Check, X, ChevronLeft, ChevronRight, MessageSquare } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 import { submitVote } from '@/app/(app)/parametres/actions'
 
 interface Vote {
@@ -23,12 +23,49 @@ interface PendingVote {
   votes: Vote[]
 }
 
-export function VotePanelClient({ pendingVotes }: { pendingVotes: PendingVote[] }) {
+export function VotePanelClient({ userId }: { userId: string }) {
+  const [pendingVotes, setPendingVotes] = useState<PendingVote[]>([])
   const [index, setIndex] = useState(0)
   const [comment, setComment] = useState('')
   const [showComment, setShowComment] = useState(false)
   const [loading, setLoading] = useState(false)
-  const router = useRouter()
+  const supabase = createClient()
+
+  const fetchPendingVotes = useCallback(async () => {
+    const { data: memberships } = await supabase
+      .from('group_members')
+      .select('group_id')
+      .eq('user_id', userId)
+
+    const groupIds = (memberships ?? []).map((m: any) => m.group_id)
+    if (groupIds.length === 0) return
+
+    const { data: requests } = await supabase
+      .from('objective_vote_requests')
+      .select(`
+        id, target_count, period, multiplier, created_at, group_id, requester_id,
+        requester:profiles!requester_id(username, avatar_url),
+        group:groups!group_id(name),
+        activity:activities!activity_id(name, emoji),
+        votes:objective_votes(vote, comment, voter_id)
+      `)
+      .eq('status', 'pending')
+      .neq('requester_id', userId)
+      .in('group_id', groupIds)
+      .order('created_at', { ascending: true })
+
+    const filtered = (requests ?? []).filter(r =>
+      !(r.votes ?? []).some((v: any) => v.voter_id === userId)
+    )
+    setPendingVotes(filtered as any)
+    setIndex(i => Math.min(i, Math.max(0, filtered.length - 1)))
+  }, [userId])
+
+  useEffect(() => {
+    fetchPendingVotes()
+    const interval = setInterval(fetchPendingVotes, 15000)
+    return () => clearInterval(interval)
+  }, [fetchPendingVotes])
 
   const current = pendingVotes[index]
   if (!current) return null
@@ -42,14 +79,12 @@ export function VotePanelClient({ pendingVotes }: { pendingVotes: PendingVote[] 
     setComment('')
     setShowComment(false)
     setLoading(false)
-    if (index > 0) setIndex(i => i - 1)
-    router.refresh()
+    await fetchPendingVotes()
   }
 
   return (
     <div className="hidden lg:block fixed bottom-6 right-6 z-40 w-80">
       <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl overflow-hidden">
-        {/* Header */}
         <div className="px-4 py-3 bg-violet-600/10 border-b border-violet-500/20 flex items-center justify-between">
           <span className="text-sm font-bold text-violet-400">🗳️ Vote en cours</span>
           {pendingVotes.length > 1 && (
@@ -73,16 +108,13 @@ export function VotePanelClient({ pendingVotes }: { pendingVotes: PendingVote[] 
           )}
         </div>
 
-        {/* Body */}
         <div className="p-4 space-y-3">
-          {/* Info */}
           <p className="text-xs text-gray-500">
             <span className="font-semibold text-white">{current.requester?.username ?? '?'}</span>
             {' '}veut un objectif dans{' '}
             <span className="font-semibold text-white">{current.group?.name ?? '?'}</span>
           </p>
 
-          {/* Activity card */}
           <div className="flex items-center gap-3 p-3 bg-gray-800 rounded-xl">
             <span className="text-2xl">{current.activity?.emoji ?? '⚡'}</span>
             <div>
@@ -93,7 +125,6 @@ export function VotePanelClient({ pendingVotes }: { pendingVotes: PendingVote[] 
             </div>
           </div>
 
-          {/* Existing votes */}
           {(acceptCount > 0 || rejectCount > 0) && (
             <div className="flex gap-4 text-xs">
               <span className="text-green-400 font-medium">✓ {acceptCount} pour</span>
@@ -101,7 +132,6 @@ export function VotePanelClient({ pendingVotes }: { pendingVotes: PendingVote[] 
             </div>
           )}
 
-          {/* Optional comment */}
           {showComment && (
             <textarea
               value={comment}
@@ -112,7 +142,6 @@ export function VotePanelClient({ pendingVotes }: { pendingVotes: PendingVote[] 
             />
           )}
 
-          {/* Actions */}
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowComment(v => !v)}
