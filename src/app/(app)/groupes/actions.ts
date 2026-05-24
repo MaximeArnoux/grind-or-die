@@ -32,26 +32,12 @@ export async function joinGroup(inviteCode: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Non authentifié' }
 
-  const { data: group } = await supabase
-    .from('groups')
-    .select('id, max_members')
-    .eq('invite_code', inviteCode.trim().toUpperCase())
-    .single()
+  const { data, error } = await supabase.rpc('join_group_by_code', {
+    invite_code_input: inviteCode.trim().toUpperCase(),
+  })
 
-  if (!group) return { error: 'Code invalide' }
-
-  const { count } = await supabase
-    .from('group_members')
-    .select('*', { count: 'exact', head: true })
-    .eq('group_id', group.id)
-
-  if ((count ?? 0) >= group.max_members) return { error: 'Groupe complet (10 membres max)' }
-
-  const { error } = await supabase
-    .from('group_members')
-    .insert({ group_id: group.id, user_id: user.id, role: 'member' })
-
-  if (error) return { error: 'Tu es déjà dans ce groupe' }
+  if (error) return { error: `Impossible de rejoindre: ${error.message}` }
+  if (data?.error) return { error: data.error }
 
   revalidatePath('/groupes')
   revalidatePath('/dashboard')

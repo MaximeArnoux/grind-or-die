@@ -453,6 +453,54 @@ create or replace trigger on_auth_user_created
   for each row execute function handle_new_user();
 
 -- ============================================
+-- FUNCTION: Join group by invite code (bypasses RLS for non-members)
+-- ============================================
+create or replace function join_group_by_code(invite_code_input text)
+returns json
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_group_id     uuid;
+  v_max_members  integer;
+  v_member_count integer;
+  v_user_id      uuid := auth.uid();
+begin
+  if v_user_id is null then
+    return json_build_object('error', 'Non authentifié');
+  end if;
+
+  select id, max_members into v_group_id, v_max_members
+  from groups
+  where invite_code = upper(trim(invite_code_input));
+
+  if v_group_id is null then
+    return json_build_object('error', 'Code invalide');
+  end if;
+
+  select count(*) into v_member_count
+  from group_members where group_id = v_group_id;
+
+  if v_member_count >= v_max_members then
+    return json_build_object('error', 'Groupe complet (10 membres max)');
+  end if;
+
+  if exists (
+    select 1 from group_members
+    where group_id = v_group_id and user_id = v_user_id
+  ) then
+    return json_build_object('error', 'Tu es déjà dans ce groupe');
+  end if;
+
+  insert into group_members (group_id, user_id, role)
+  values (v_group_id, v_user_id, 'member');
+
+  return json_build_object('success', true);
+end;
+$$;
+
+-- ============================================
 -- INDEXES for performance
 -- ============================================
 create index if not exists idx_activity_logs_user_id on activity_logs(user_id);
