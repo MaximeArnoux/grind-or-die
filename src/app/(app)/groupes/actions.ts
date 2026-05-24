@@ -153,14 +153,13 @@ export async function removeMember(groupId: string, targetUserId: string) {
   if (!user) return { error: 'Non authentifié' }
   if (user.id === targetUserId) return { error: 'Tu ne peux pas te retirer toi-même' }
 
-  const { data: membership } = await supabase
-    .from('group_members')
-    .select('role')
-    .eq('group_id', groupId)
-    .eq('user_id', user.id)
+  const { data: group } = await supabase
+    .from('groups')
+    .select('created_by')
+    .eq('id', groupId)
     .single()
 
-  if (membership?.role !== 'admin') return { error: "Tu n'es pas admin de ce groupe" }
+  if (group?.created_by !== user.id) return { error: "Seul le créateur du groupe peut retirer des membres" }
 
   const { error } = await supabase
     .from('group_members')
