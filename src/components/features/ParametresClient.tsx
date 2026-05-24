@@ -295,8 +295,6 @@ export function ParametresClient({ profile, objectives, activities, latestWeight
             >
               <option value="1.25">×1.25 (+25%)</option>
               <option value="1.5">×1.5 (+50%)</option>
-              <option value="1.75">×1.75 (+75%)</option>
-              <option value="2">×2 (+100%)</option>
             </select>
           </div>
           <div className="p-3 bg-violet-500/10 border border-violet-500/20 rounded-xl">
