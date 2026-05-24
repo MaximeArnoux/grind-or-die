@@ -8,7 +8,8 @@ export default async function GroupesPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 })
+  const nowParis = new Date(new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }))
+  const weekStart = startOfWeek(nowParis, { weekStartsOn: 1 })
 
   // Step 1: get the user's memberships (no join — avoids FK detection issues)
   const { data: memberships } = await supabase
@@ -63,19 +64,11 @@ export default async function GroupesPage() {
 
       const memberIds = (members ?? []).map((m: any) => m.user_id)
 
-      const { data: galEntries } = await supabase
-        .from('group_activity_logs')
-        .select('activity_log_id')
-        .eq('group_id', group.id)
-
-      const logIds = (galEntries ?? []).map((e: any) => e.activity_log_id)
-
       let weeklyLogs: any[] = []
-      if (logIds.length > 0 && memberIds.length > 0) {
+      if (memberIds.length > 0) {
         const { data } = await supabase
           .from('activity_logs')
           .select('user_id, points_earned')
-          .in('id', logIds)
           .in('user_id', memberIds)
           .gte('logged_at', weekStart.toISOString())
         weeklyLogs = data ?? []
