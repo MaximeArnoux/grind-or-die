@@ -44,24 +44,41 @@ export function VotePanelClient({ userId }: { userId: string }) {
 
     const { data: requests, error: reqErr } = await supabase
       .from('objective_vote_requests')
-      .select(`
-        id, target_count, period, multiplier, created_at, group_id, requester_id,
-        requester:profiles!requester_id(username, avatar_url),
-        group:groups!group_id(name),
-        activity:activities!activity_id(name, emoji),
-        votes:objective_votes(vote, comment, voter_id)
-      `)
+      .select('id, target_count, period, multiplier, created_at, group_id, requester_id, activity_id')
       .eq('status', 'pending')
       .neq('requester_id', userId)
       .in('group_id', groupIds)
       .order('created_at', { ascending: true })
 
     if (reqErr) { console.error('[VotePanel] objective_vote_requests error:', reqErr); return }
+    if (!requests || requests.length === 0) { setPendingVotes([]); return }
 
-    const filtered = (requests ?? []).filter(r =>
-      !(r.votes ?? []).some((v: any) => v.voter_id === userId)
+    const requesterIds = [...new Set(requests.map(r => r.requester_id))]
+    const activityIds = [...new Set(requests.map(r => r.activity_id))]
+    const requestIds = requests.map(r => r.id)
+
+    const [profilesRes, activitiesRes, groupsRes, votesRes] = await Promise.all([
+      supabase.from('profiles').select('id, username, avatar_url').in('id', requesterIds),
+      supabase.from('activities').select('id, name, emoji').in('id', activityIds),
+      supabase.from('groups').select('id, name').in('id', groupIds),
+      supabase.from('objective_votes').select('request_id, vote, comment, voter_id').in('request_id', requestIds),
+    ])
+
+    const profileMap = new Map((profilesRes.data ?? []).map(p => [p.id, p]))
+    const activityMap = new Map((activitiesRes.data ?? []).map(a => [a.id, a]))
+    const groupMap = new Map((groupsRes.data ?? []).map(g => [g.id, g]))
+
+    const enriched = requests.map(r => ({
+      ...r,
+      requester: profileMap.get(r.requester_id) ?? null,
+      activity: activityMap.get(r.activity_id) ?? null,
+      group: groupMap.get(r.group_id) ?? null,
+      votes: (votesRes.data ?? []).filter(v => v.request_id === r.id),
+    }))
+
+    const filtered = enriched.filter(r =>
+      !r.votes.some((v: any) => v.voter_id === userId)
     )
-    console.log('[VotePanel] pending votes found:', filtered.length, 'in groups:', groupIds)
     setPendingVotes(filtered as any)
     setIndex(i => Math.min(i, Math.max(0, filtered.length - 1)))
   }, [userId])

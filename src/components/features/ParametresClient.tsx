@@ -243,8 +243,8 @@ export function ParametresClient({ profile, objectives, pendingVoteRequests, act
           ) : (
             <div className="space-y-3">
               {pendingVoteRequests.map((req: any) => {
-                const activity = Array.isArray(req.activity) ? req.activity[0] : req.activity
-                const group = Array.isArray(req.group) ? req.group[0] : req.group
+                const activityInfo = activities.find(a => a.id === req.activity_id)
+                const groupInfo = userGroups.find(g => g.id === req.group_id)
                 const acceptCount = (req.votes ?? []).filter((v: any) => v.vote === 'accept').length
                 const rejectCount = (req.votes ?? []).filter((v: any) => v.vote === 'reject').length
                 return (
@@ -252,14 +252,14 @@ export function ParametresClient({ profile, objectives, pendingVoteRequests, act
                     <div>
                       <div className="flex items-center gap-2 mb-0.5">
                         <p className="text-sm font-medium text-white">
-                          {activity?.emoji} {activity?.name}
+                          {(activityInfo as any)?.emoji} {activityInfo?.name}
                         </p>
                         <span className="flex items-center gap-1 text-xs text-yellow-400 bg-yellow-500/10 px-2 py-0.5 rounded-full">
                           <Clock size={10} /> En attente
                         </span>
                       </div>
                       <p className="text-xs text-gray-500">
-                        {req.target_count}× / {req.period === 'daily' ? 'jour' : 'semaine'} · ×{req.multiplier} · {group?.name}
+                        {req.target_count}× / {req.period === 'daily' ? 'jour' : 'semaine'} · ×{req.multiplier} · {groupInfo?.name}
                       </p>
                       {(acceptCount > 0 || rejectCount > 0) && (
                         <p className="text-xs mt-1">

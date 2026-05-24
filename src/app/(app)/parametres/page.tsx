@@ -14,7 +14,7 @@ export default async function ParametresPage() {
     supabase.from('weight_logs').select('*').eq('user_id', user.id).order('logged_at', { ascending: false }).limit(1),
     supabase.from('group_members').select('group:groups!group_id(id, name)').eq('user_id', user.id),
     supabase.from('objective_vote_requests')
-      .select('id, target_count, period, multiplier, created_at, group:groups!group_id(name), activity:activities!activity_id(name, emoji), votes:objective_votes(vote)')
+      .select('id, target_count, period, multiplier, created_at, group_id, activity_id, votes:objective_votes(vote)')
       .eq('requester_id', user.id)
       .eq('status', 'pending'),
   ])
