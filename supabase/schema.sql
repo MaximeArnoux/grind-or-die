@@ -523,6 +523,71 @@ end;
 $$;
 
 -- ============================================
+-- OBJECTIVE VOTE REQUESTS
+-- ============================================
+create table if not exists objective_vote_requests (
+  id uuid default gen_random_uuid() primary key,
+  requester_id uuid references profiles(id) on delete cascade not null,
+  group_id uuid references groups(id) on delete cascade not null,
+  activity_id uuid references activities(id) on delete cascade not null,
+  target_count integer not null default 1,
+  period text check (period in ('daily', 'weekly')) default 'weekly',
+  multiplier decimal(3,2) default 1.5,
+  status text check (status in ('pending', 'accepted', 'rejected')) default 'pending',
+  created_at timestamptz default now()
+);
+
+create table if not exists objective_votes (
+  id uuid default gen_random_uuid() primary key,
+  request_id uuid references objective_vote_requests(id) on delete cascade not null,
+  voter_id uuid references profiles(id) on delete cascade not null,
+  vote text check (vote in ('accept', 'reject')) not null,
+  comment text,
+  created_at timestamptz default now(),
+  unique(request_id, voter_id)
+);
+
+alter table objective_vote_requests enable row level security;
+alter table objective_votes enable row level security;
+
+create policy "Membres du groupe peuvent voir les demandes"
+  on objective_vote_requests for select
+  using (exists (
+    select 1 from group_members
+    where group_id = objective_vote_requests.group_id and user_id = auth.uid()
+  ));
+
+create policy "Membres peuvent créer des demandes"
+  on objective_vote_requests for insert
+  with check (requester_id = auth.uid() and exists (
+    select 1 from group_members
+    where group_id = objective_vote_requests.group_id and user_id = auth.uid()
+  ));
+
+create policy "Membres peuvent mettre à jour le statut"
+  on objective_vote_requests for update
+  using (exists (
+    select 1 from group_members
+    where group_id = objective_vote_requests.group_id and user_id = auth.uid()
+  ));
+
+create policy "Membres peuvent voir les votes"
+  on objective_votes for select
+  using (exists (
+    select 1 from objective_vote_requests ovr
+    join group_members gm on gm.group_id = ovr.group_id
+    where ovr.id = objective_votes.request_id and gm.user_id = auth.uid()
+  ));
+
+create policy "Membres peuvent voter"
+  on objective_votes for insert
+  with check (voter_id = auth.uid() and exists (
+    select 1 from objective_vote_requests ovr
+    join group_members gm on gm.group_id = ovr.group_id
+    where ovr.id = objective_votes.request_id and gm.user_id = auth.uid()
+  ));
+
+-- ============================================
 -- INDEXES for performance
 -- ============================================
 create index if not exists idx_activity_logs_user_id on activity_logs(user_id);
