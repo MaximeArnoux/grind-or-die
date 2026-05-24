@@ -2,13 +2,14 @@
 
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Trash2, Camera } from 'lucide-react'
+import { Plus, Trash2, Camera, Users } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { Badge } from '@/components/ui/Badge'
+import { createVoteRequest } from '@/app/(app)/parametres/actions'
 import type { Profile, Activity } from '@/types'
 
 interface Props {
@@ -17,9 +18,10 @@ interface Props {
   activities: Activity[]
   latestWeight: number | null
   userId: string
+  userGroups: { id: string; name: string }[]
 }
 
-export function ParametresClient({ profile, objectives, activities, latestWeight, userId }: Props) {
+export function ParametresClient({ profile, objectives, activities, latestWeight, userId, userGroups }: Props) {
   const router = useRouter()
   const supabase = createClient()
 
@@ -44,10 +46,11 @@ export function ParametresClient({ profile, objectives, activities, latestWeight
   const [objCount, setObjCount] = useState('1')
   const [objPeriod, setObjPeriod] = useState<'daily' | 'weekly'>('weekly')
   const [objMultiplier, setObjMultiplier] = useState('1.5')
+  const [objGroupId, setObjGroupId] = useState(userGroups.length === 1 ? userGroups[0].id : '')
   const [objLoading, setObjLoading] = useState(false)
+  const [objError, setObjError] = useState('')
 
   // Password
-  const [showPassword, setShowPassword] = useState(false)
   const [newPassword, setNewPassword] = useState('')
   const [pwLoading, setPwLoading] = useState(false)
   const [pwSuccess, setPwSuccess] = useState(false)
@@ -100,18 +103,38 @@ export function ParametresClient({ profile, objectives, activities, latestWeight
   async function addObjective() {
     if (!objActivity) return
     setObjLoading(true)
+    setObjError('')
     try {
-      await supabase.from('user_objectives').insert({
-        user_id: userId,
-        activity_id: objActivity,
-        target_count: parseInt(objCount),
-        period: objPeriod,
-        multiplier: parseFloat(objMultiplier),
-      })
+      if (objGroupId) {
+        const result = await createVoteRequest(
+          objGroupId,
+          objActivity,
+          parseInt(objCount),
+          objPeriod,
+          parseFloat(objMultiplier)
+        )
+        if (result.error) {
+          setObjError(result.error)
+          return
+        }
+      } else {
+        await supabase.from('user_objectives').insert({
+          user_id: userId,
+          activity_id: objActivity,
+          target_count: parseInt(objCount),
+          period: objPeriod,
+          multiplier: parseFloat(objMultiplier),
+        })
+      }
       setShowObjective(false)
-      setObjActivity(''); setObjCount('1'); setObjMultiplier('1.5')
+      setObjActivity('')
+      setObjCount('1')
+      setObjMultiplier('1.5')
+      setObjGroupId(userGroups.length === 1 ? userGroups[0].id : '')
       router.refresh()
-    } finally { setObjLoading(false) }
+    } finally {
+      setObjLoading(false)
+    }
   }
 
   async function removeObjective(id: string) {
@@ -128,6 +151,8 @@ export function ParametresClient({ profile, objectives, activities, latestWeight
     setTimeout(() => setPwSuccess(false), 2000)
     setPwLoading(false)
   }
+
+  const voteMode = !!objGroupId
 
   return (
     <div className="space-y-6">
@@ -204,7 +229,7 @@ export function ParametresClient({ profile, objectives, activities, latestWeight
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Mes objectifs</CardTitle>
-            <Button size="sm" onClick={() => setShowObjective(true)}>
+            <Button size="sm" onClick={() => { setObjError(''); setShowObjective(true) }}>
               <Plus size={14} /> Ajouter
             </Button>
           </div>
@@ -259,6 +284,26 @@ export function ParametresClient({ profile, objectives, activities, latestWeight
       {/* Objective modal */}
       <Modal open={showObjective} onClose={() => setShowObjective(false)} title="Ajouter un objectif">
         <div className="space-y-4">
+          {/* Group selector */}
+          {userGroups.length > 0 && (
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-gray-300 flex items-center gap-1.5">
+                <Users size={14} className="text-violet-400" />
+                Soumettre au vote du groupe
+              </label>
+              <select
+                value={objGroupId}
+                onChange={e => setObjGroupId(e.target.value)}
+                className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-sm text-gray-100 focus:outline-none focus:border-violet-500"
+              >
+                <option value="">Sans vote (créer directement)</option>
+                {userGroups.map(g => (
+                  <option key={g.id} value={g.id}>{g.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-gray-300">Activité</label>
             <select
@@ -297,14 +342,23 @@ export function ParametresClient({ profile, objectives, activities, latestWeight
               <option value="1.5">×1.5 (+50%)</option>
             </select>
           </div>
-          <div className="p-3 bg-violet-500/10 border border-violet-500/20 rounded-xl">
-            <p className="text-xs text-violet-400">
-              Chaque fois que tu logges cette activité avec cet objectif actif, tu gagneras ×{objMultiplier} les points normaux.
+
+          <div className={`p-3 rounded-xl border ${voteMode ? 'bg-blue-500/10 border-blue-500/20' : 'bg-violet-500/10 border-violet-500/20'}`}>
+            <p className={`text-xs ${voteMode ? 'text-blue-400' : 'text-violet-400'}`}>
+              {voteMode
+                ? `Ta demande sera soumise au vote des membres du groupe. L'objectif sera créé si la majorité accepte.`
+                : `Chaque fois que tu logges cette activité avec cet objectif actif, tu gagneras ×${objMultiplier} les points normaux.`
+              }
             </p>
           </div>
+
+          {objError && <p className="text-sm text-red-400">{objError}</p>}
+
           <div className="flex gap-3">
             <Button variant="secondary" className="flex-1" onClick={() => setShowObjective(false)}>Annuler</Button>
-            <Button className="flex-1" onClick={addObjective} loading={objLoading}>Ajouter</Button>
+            <Button className="flex-1" onClick={addObjective} loading={objLoading}>
+              {voteMode ? '🗳️ Soumettre au vote' : 'Ajouter'}
+            </Button>
           </div>
         </div>
       </Modal>

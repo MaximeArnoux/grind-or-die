@@ -1,9 +1,10 @@
 import { redirect } from 'next/navigation'
-import type { ReactNode } from 'react'
+import { Suspense, type ReactNode } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { Topbar } from '@/components/layout/Topbar'
 import { MobileNav } from '@/components/layout/MobileNav'
+import { VotePanelWrapper } from '@/components/features/VotePanelWrapper'
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const supabase = await createClient()
@@ -54,6 +55,9 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         </main>
       </div>
       <MobileNav />
+      <Suspense fallback={null}>
+        <VotePanelWrapper userId={user.id} />
+      </Suspense>
     </div>
   )
 }
