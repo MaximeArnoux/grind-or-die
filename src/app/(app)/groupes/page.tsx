@@ -50,9 +50,6 @@ export default async function GroupesPage() {
         .eq('group_id', group.id)
 
       const memberIds = (members ?? []).map((m: any) => m.user_id)
-      const memberJoinedAt = new Map(
-        (members ?? []).map((m: any) => [m.user_id, new Date(m.joined_at)])
-      )
 
       const { data: galEntries } = await supabase
         .from('group_activity_logs')
@@ -65,7 +62,7 @@ export default async function GroupesPage() {
       if (logIds.length > 0 && memberIds.length > 0) {
         const { data } = await supabase
           .from('activity_logs')
-          .select('user_id, points_earned, logged_at')
+          .select('user_id, points_earned')
           .in('id', logIds)
           .in('user_id', memberIds)
           .gte('logged_at', weekStart.toISOString())
@@ -74,8 +71,6 @@ export default async function GroupesPage() {
 
       const totals = new Map<string, number>()
       for (const log of weeklyLogs) {
-        const joinedAt = memberJoinedAt.get(log.user_id)
-        if (!joinedAt || new Date(log.logged_at) < joinedAt) continue
         totals.set(log.user_id, (totals.get(log.user_id) ?? 0) + log.points_earned)
       }
 
