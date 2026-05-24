@@ -32,15 +32,17 @@ export function VotePanelClient({ userId }: { userId: string }) {
   const supabase = createClient()
 
   const fetchPendingVotes = useCallback(async () => {
-    const { data: memberships } = await supabase
+    const { data: memberships, error: memberErr } = await supabase
       .from('group_members')
       .select('group_id')
       .eq('user_id', userId)
 
-    const groupIds = (memberships ?? []).map((m: any) => m.group_id)
-    if (groupIds.length === 0) return
+    if (memberErr) { console.error('[VotePanel] group_members error:', memberErr); return }
 
-    const { data: requests } = await supabase
+    const groupIds = (memberships ?? []).map((m: any) => m.group_id)
+    if (groupIds.length === 0) { console.log('[VotePanel] no groups found for user', userId); return }
+
+    const { data: requests, error: reqErr } = await supabase
       .from('objective_vote_requests')
       .select(`
         id, target_count, period, multiplier, created_at, group_id, requester_id,
@@ -54,9 +56,12 @@ export function VotePanelClient({ userId }: { userId: string }) {
       .in('group_id', groupIds)
       .order('created_at', { ascending: true })
 
+    if (reqErr) { console.error('[VotePanel] objective_vote_requests error:', reqErr); return }
+
     const filtered = (requests ?? []).filter(r =>
       !(r.votes ?? []).some((v: any) => v.voter_id === userId)
     )
+    console.log('[VotePanel] pending votes found:', filtered.length, 'in groups:', groupIds)
     setPendingVotes(filtered as any)
     setIndex(i => Math.min(i, Math.max(0, filtered.length - 1)))
   }, [userId])
