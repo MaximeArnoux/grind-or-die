@@ -147,6 +147,34 @@ export async function inviteByUsername(groupId: string, username: string) {
   return { success: true }
 }
 
+export async function removeMember(groupId: string, targetUserId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Non authentifié' }
+  if (user.id === targetUserId) return { error: 'Tu ne peux pas te retirer toi-même' }
+
+  const { data: membership } = await supabase
+    .from('group_members')
+    .select('role')
+    .eq('group_id', groupId)
+    .eq('user_id', user.id)
+    .single()
+
+  if (membership?.role !== 'admin') return { error: "Tu n'es pas admin de ce groupe" }
+
+  const { error } = await supabase
+    .from('group_members')
+    .delete()
+    .eq('group_id', groupId)
+    .eq('user_id', targetUserId)
+
+  if (error) return { error: `Impossible de retirer le membre: ${error.message}` }
+
+  revalidatePath('/groupes')
+  revalidatePath('/dashboard')
+  return { success: true }
+}
+
 export async function leaveGroup(groupId: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

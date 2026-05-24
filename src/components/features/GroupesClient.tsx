@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Users, Copy, Check, LogIn, Crown, LogOut, Trash2, Globe, Lock, Pencil } from 'lucide-react'
+import { Plus, Users, Copy, Check, LogIn, Crown, LogOut, Trash2, Globe, Lock, Pencil, UserMinus } from 'lucide-react'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -9,7 +9,7 @@ import { Modal } from '@/components/ui/Modal'
 import { Badge } from '@/components/ui/Badge'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
-import { createGroup, updateGroup, joinGroup, joinPublicGroup, inviteByUsername, leaveGroup, deleteGroup } from '@/app/(app)/groupes/actions'
+import { createGroup, updateGroup, joinGroup, joinPublicGroup, inviteByUsername, removeMember, leaveGroup, deleteGroup } from '@/app/(app)/groupes/actions'
 
 interface RankingMember {
   user_id: string
@@ -309,6 +309,33 @@ export function GroupesClient({ groups, publicGroups, currentUserId }: { groups:
                             <span className="flex-1 text-sm text-white group-hover:underline">{member.username}</span>
                           </Link>
                           <span className="text-sm font-bold text-white">{member.points} pts</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Gestion des membres (admin only) */}
+                {group.role === 'admin' && group.ranking.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-gray-800/50">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Membres</p>
+                    <div className="space-y-1">
+                      {group.ranking.map(member => (
+                        <div key={member.user_id} className="flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-gray-800/30">
+                          <span className="text-sm text-gray-300">{member.username}</span>
+                          {member.user_id !== currentUserId && (
+                            <button
+                              onClick={async () => {
+                                setLoading(true)
+                                const result = await removeMember(group.id, member.user_id)
+                                setLoading(false)
+                                if (result.error) setError(result.error)
+                              }}
+                              className="flex items-center gap-1 text-xs text-gray-600 hover:text-red-400 transition-colors px-2 py-1 rounded-lg hover:bg-red-500/10"
+                            >
+                              <UserMinus size={12} /> Retirer
+                            </button>
+                          )}
                         </div>
                       ))}
                     </div>
