@@ -18,23 +18,17 @@ export default async function GroupesPage() {
 
   const groupIds = (memberships ?? []).map((m: any) => m.group_id)
 
-  // Fetch public groups the user is NOT already in
-  const publicGroupsQuery = supabase
-    .from('groups')
-    .select('id, name, description, max_members, group_members(count)')
-    .eq('is_public', true)
-
-  const { data: publicGroupsRaw } = groupIds.length > 0
-    ? await publicGroupsQuery.not('id', 'in', `(${groupIds.join(',')})`)
-    : await publicGroupsQuery
-
-  const publicGroups: PublicGroup[] = (publicGroupsRaw ?? []).map((g: any) => ({
-    id: g.id,
-    name: g.name,
-    description: g.description,
-    max_members: g.max_members,
-    member_count: Array.isArray(g.group_members) ? (g.group_members[0]?.count ?? 0) : 0,
-  }))
+  // Fetch public groups the user is NOT already in (via security definer function)
+  const { data: allPublicGroups } = await supabase.rpc('get_public_groups')
+  const publicGroups: PublicGroup[] = (allPublicGroups ?? [])
+    .filter((g: any) => !groupIds.includes(g.id))
+    .map((g: any) => ({
+      id: g.id,
+      name: g.name,
+      description: g.description,
+      max_members: g.max_members,
+      member_count: Number(g.member_count ?? 0),
+    }))
 
   if (groupIds.length === 0) {
     return (
