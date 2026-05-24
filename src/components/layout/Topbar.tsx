@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
-import { Bell, Gift, ChevronDown, User, Settings, LogOut, Calendar, History } from 'lucide-react'
+import { Bell, ChevronDown, User, Settings, LogOut, Calendar, History } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { Profile } from '@/types'
 
@@ -37,9 +37,6 @@ export function Topbar({ profile, notificationCount = 0 }: TopbarProps) {
 
   return (
     <header className="h-14 border-b border-gray-800/50 bg-gray-950/80 backdrop-blur-sm sticky top-0 z-20 flex items-center justify-end px-6 gap-3">
-      <button className="relative p-2 rounded-xl hover:bg-gray-800 text-gray-400 hover:text-white transition-colors">
-        <Gift size={18} />
-      </button>
       <button className="relative p-2 rounded-xl hover:bg-gray-800 text-gray-400 hover:text-white transition-colors">
         <Bell size={18} />
         {notificationCount > 0 && (
