@@ -155,6 +155,16 @@ create table if not exists notifications (
   created_at timestamptz default now()
 );
 
+-- ============================================
+-- GROUP ACTIVITY LOGS (link activity_log ↔ group)
+-- ============================================
+create table if not exists group_activity_logs (
+  id uuid default uuid_generate_v4() primary key,
+  group_id uuid references groups(id) on delete cascade not null,
+  activity_log_id uuid references activity_logs(id) on delete cascade not null,
+  unique(group_id, activity_log_id)
+);
+
 -- Remove duplicate activities created by re-running older seeds, then prevent new ones.
 with ranked_activities as (
   select
@@ -235,6 +245,7 @@ alter table user_objectives enable row level security;
 alter table weight_logs enable row level security;
 alter table user_streaks enable row level security;
 alter table notifications enable row level security;
+alter table group_activity_logs enable row level security;
 
 -- Drop existing policies before recreating
 drop policy if exists "Public profiles visible" on profiles;
@@ -318,6 +329,21 @@ create policy "Own streak write" on user_streaks for all using (auth.uid() = use
 
 -- Notifications: own
 create policy "Own notifications" on notifications for all using (auth.uid() = user_id);
+
+-- Group activity logs: members can read, users can insert/delete their own
+drop policy if exists "Group members view group logs" on group_activity_logs;
+drop policy if exists "Users add own logs to groups" on group_activity_logs;
+drop policy if exists "Users delete own group logs" on group_activity_logs;
+create policy "Group members view group logs" on group_activity_logs for select using (
+  exists (select 1 from group_members where group_id = group_activity_logs.group_id and user_id = auth.uid())
+);
+create policy "Users add own logs to groups" on group_activity_logs for insert with check (
+  exists (select 1 from group_members where group_id = group_activity_logs.group_id and user_id = auth.uid())
+  and exists (select 1 from activity_logs where id = group_activity_logs.activity_log_id and user_id = auth.uid())
+);
+create policy "Users delete own group logs" on group_activity_logs for delete using (
+  exists (select 1 from activity_logs where id = group_activity_logs.activity_log_id and user_id = auth.uid())
+);
 
 -- ============================================
 -- SEED DATA — Categories

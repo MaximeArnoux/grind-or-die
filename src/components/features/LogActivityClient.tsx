@@ -19,13 +19,19 @@ interface CartItem {
   multiplier: number
 }
 
+interface GroupOption {
+  id: string
+  name: string
+}
+
 interface Props {
   activities: Activity[]
   userObjectives: UserObjective[]
   userId: string
+  userGroups: GroupOption[]
 }
 
-export function LogActivityClient({ activities, userObjectives, userId }: Props) {
+export function LogActivityClient({ activities, userObjectives, userId, userGroups }: Props) {
   const router = useRouter()
   const supabase = createClient()
 
@@ -35,6 +41,7 @@ export function LogActivityClient({ activities, userObjectives, userId }: Props)
   const [cartExpanded, setCartExpanded] = useState(true)
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([])
 
   // Create activity modal
   const [showCreate, setShowCreate] = useState(false)
@@ -117,6 +124,12 @@ export function LogActivityClient({ activities, userObjectives, userId }: Props)
     setCart(prev => prev.map(i => i.activity.id === activityId ? { ...i, notes } : i))
   }
 
+  function toggleGroup(groupId: string) {
+    setSelectedGroupIds(prev =>
+      prev.includes(groupId) ? prev.filter(id => id !== groupId) : [...prev, groupId]
+    )
+  }
+
   async function handleLogAll() {
     if (cart.length === 0) return
     setLoading(true)
@@ -128,12 +141,26 @@ export function LogActivityClient({ activities, userObjectives, userId }: Props)
         multiplier: item.multiplier,
         notes: item.notes || null,
       }))
-      const { error } = await supabase.from('activity_logs').insert(inserts)
+      const { data: insertedLogs, error } = await supabase
+        .from('activity_logs')
+        .insert(inserts)
+        .select('id')
+
       if (!error) {
+        if (insertedLogs && selectedGroupIds.length > 0) {
+          const groupLogInserts = insertedLogs.flatMap(log =>
+            selectedGroupIds.map(groupId => ({
+              group_id: groupId,
+              activity_log_id: log.id,
+            }))
+          )
+          await supabase.from('group_activity_logs').insert(groupLogInserts)
+        }
         setSuccess(true)
         setTimeout(() => {
           setSuccess(false)
           setCart([])
+          setSelectedGroupIds([])
           router.refresh()
         }, 1500)
       }
@@ -332,6 +359,28 @@ export function LogActivityClient({ activities, userObjectives, userId }: Props)
                     )
                   })}
                 </div>
+
+                {userGroups.length > 0 && (
+                  <div className="px-4 py-3 border-t border-gray-800">
+                    <p className="text-xs text-gray-500 mb-2">Compter dans les groupes :</p>
+                    <div className="flex flex-wrap gap-2">
+                      {userGroups.map(group => (
+                        <button
+                          key={group.id}
+                          onClick={() => toggleGroup(group.id)}
+                          className={cn(
+                            'px-3 py-1 rounded-lg text-xs font-medium transition-colors',
+                            selectedGroupIds.includes(group.id)
+                              ? 'bg-violet-600 text-white'
+                              : 'bg-gray-800 text-gray-400 hover:text-white'
+                          )}
+                        >
+                          {group.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 <div className="px-4 py-3 border-t border-gray-800">
                   <Button

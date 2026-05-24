@@ -82,19 +82,36 @@ export default async function DashboardPage() {
   if (primaryGroupId) {
     const { data: groupMembers } = await supabase
       .from('group_members')
-      .select('user_id, profile:profiles(username, avatar_url)')
+      .select('user_id, joined_at, profile:profiles(username, avatar_url)')
       .eq('group_id', primaryGroupId)
 
     const memberIds = (groupMembers ?? []).map((m: any) => m.user_id)
+    const memberJoinedAt = new Map(
+      (groupMembers ?? []).map((m: any) => [m.user_id, new Date(m.joined_at)])
+    )
     if (memberIds.length > 0) {
-      const { data: groupWeeklyLogs } = await supabase
-        .from('activity_logs')
-        .select('user_id, points_earned')
-        .in('user_id', memberIds)
-        .gte('logged_at', weekStart.toISOString())
+      const { data: galEntries } = await supabase
+        .from('group_activity_logs')
+        .select('activity_log_id')
+        .eq('group_id', primaryGroupId)
+
+      const logIds = (galEntries ?? []).map((e: any) => e.activity_log_id)
+
+      let groupWeeklyLogs: any[] = []
+      if (logIds.length > 0) {
+        const { data } = await supabase
+          .from('activity_logs')
+          .select('user_id, points_earned, logged_at')
+          .in('id', logIds)
+          .in('user_id', memberIds)
+          .gte('logged_at', weekStart.toISOString())
+        groupWeeklyLogs = data ?? []
+      }
 
       const totals = new Map<string, number>()
-      for (const log of (groupWeeklyLogs ?? [])) {
+      for (const log of groupWeeklyLogs) {
+        const joinedAt = memberJoinedAt.get(log.user_id)
+        if (!joinedAt || new Date(log.logged_at) < joinedAt) continue
         totals.set(log.user_id, (totals.get(log.user_id) ?? 0) + log.points_earned)
       }
 
