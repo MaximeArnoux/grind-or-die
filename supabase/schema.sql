@@ -405,7 +405,7 @@ begin
   insert into activities (name, emoji, points, type, category_id, can_repeat_daily, max_per_day) values
 ('Réveil avant 9h', '⏰', 2, 'positive', sommeil_id, false, 1),
     ('Coucher avant 01h', '🌙', 5, 'positive', sommeil_id, false, 1),
-    ('Sieste 20min', '💤', 1, 'positive', sommeil_id, false, 1),
+
     ('Moins de 6h sommeil', '😵', -3, 'negative', sommeil_id, false, 1),
     ('+10h sommeil', '🛌', -3, 'negative', sommeil_id, false, 1),
     ('Couché après 01h', '🌃', -2, 'negative', sommeil_id, false, 1),
@@ -427,11 +427,7 @@ begin
     ('Journal', '📓', 2, 'positive', devperso_id, false, 1),
     ('Douche froide', '🚿', 3, 'positive', devperso_id, false, 1),
     ('Podcast éducatif', '🎧', 1, 'positive', devperso_id, true, 2),
-    ('Visualisation', '🎯', 1, 'positive', devperso_id, false, 1),
     ('Pas de réseaux sociaux', '📵', 3, 'positive', devperso_id, false, 1),
-    ('Temps écran 3h+', '📺', -3, 'negative', devperso_id, false, 1),
-    ('Temps écran 5h+', '📺', -5, 'negative', devperso_id, false, 1),
-    ('Temps écran 7h+', '📺', -7, 'negative', devperso_id, false, 1),
     ('Réseaux sociaux 2h+', '📱', -3, 'negative', devperso_id, false, 1)
   on conflict do nothing;
 

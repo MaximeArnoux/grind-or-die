@@ -33,7 +33,7 @@ export const DEFAULT_ACTIVITIES = [
   { name: '8h sommeil', emoji: '😴', points: 3, type: 'positive', category: 'Sommeil', can_repeat_daily: false, max_per_day: 1 },
   { name: 'Réveil avant 9h', emoji: '⏰', points: 2, type: 'positive', category: 'Sommeil', can_repeat_daily: false, max_per_day: 1 },
   { name: 'Coucher avant 00h', emoji: '🌙', points: 5, type: 'positive', category: 'Sommeil', can_repeat_daily: false, max_per_day: 1 },
-  { name: 'Sieste 20min', emoji: '💤', points: 1, type: 'positive', category: 'Sommeil', can_repeat_daily: false, max_per_day: 1 },
+
   { name: 'Moins de 6h sommeil', emoji: '😵', points: -3, type: 'negative', category: 'Sommeil', can_repeat_daily: false, max_per_day: 1 },
   { name: '+10h sommeil', emoji: '🛌', points: -3, type: 'negative', category: 'Sommeil', can_repeat_daily: false, max_per_day: 1 },
   { name: 'Couché après 01h', emoji: '🌃', points: -2, type: 'negative', category: 'Sommeil', can_repeat_daily: false, max_per_day: 1 },
@@ -51,11 +51,7 @@ export const DEFAULT_ACTIVITIES = [
   { name: 'Journal', emoji: '📓', points: 2, type: 'positive', category: 'Dev perso', can_repeat_daily: false, max_per_day: 1 },
   { name: 'Douche froide', emoji: '🚿', points: 3, type: 'positive', category: 'Dev perso', can_repeat_daily: false, max_per_day: 1 },
   { name: 'Podcast éducatif', emoji: '🎧', points: 1, type: 'positive', category: 'Dev perso', can_repeat_daily: true, max_per_day: 2 },
-  { name: 'Visualisation', emoji: '🎯', points: 1, type: 'positive', category: 'Dev perso', can_repeat_daily: false, max_per_day: 1 },
   { name: 'Pas de réseaux sociaux', emoji: '📵', points: 3, type: 'positive', category: 'Dev perso', can_repeat_daily: false, max_per_day: 1 },
-  { name: 'Temps écran 3h+', emoji: '📺', points: -3, type: 'negative', category: 'Dev perso', can_repeat_daily: false, max_per_day: 1 },
-  { name: 'Temps écran 5h+', emoji: '📺', points: -5, type: 'negative', category: 'Dev perso', can_repeat_daily: false, max_per_day: 1 },
-  { name: 'Temps écran 7h+', emoji: '📺', points: -7, type: 'negative', category: 'Dev perso', can_repeat_daily: false, max_per_day: 1 },
   { name: 'Réseaux sociaux 2h+', emoji: '📱', points: -3, type: 'negative', category: 'Dev perso', can_repeat_daily: false, max_per_day: 1 },
 
   // LOOKSMAX
