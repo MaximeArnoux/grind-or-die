@@ -11,16 +11,12 @@ export const ACTIVITY_CATEGORIES: Omit<ActivityCategory, 'id'>[] = [
 ]
 
 export const DEFAULT_ACTIVITIES = [
-  // FITNESS
+  // FITNESS (UI spéciale — ne pas afficher dans la grille normale)
+  { name: 'Course à pied', emoji: '🏃', points: 1, type: 'positive', category: 'Fitness', can_repeat_daily: true, max_per_day: 100 },
+  { name: 'Vélo', emoji: '🚴', points: 1, type: 'positive', category: 'Fitness', can_repeat_daily: true, max_per_day: 200 },
+  { name: 'Natation', emoji: '🏊', points: 2, type: 'positive', category: 'Fitness', can_repeat_daily: false, max_per_day: 1 },
   { name: 'Salle de sport', emoji: '🏋️', points: 5, type: 'positive', category: 'Fitness', can_repeat_daily: false, max_per_day: 1 },
-  { name: '1km course à pied', emoji: '🏃', points: 1, type: 'positive', category: 'Fitness', can_repeat_daily: true, max_per_day: 15 },
-  { name: '2km de vélo', emoji: '🚴', points: 1, type: 'positive', category: 'Fitness', can_repeat_daily: true, max_per_day: 20 },
-  { name: '10K steps', emoji: '🚶', points: 2, type: 'positive', category: 'Fitness', can_repeat_daily: false, max_per_day: 1 },
-  { name: 'Natation 30min', emoji: '🏊', points: 4, type: 'positive', category: 'Fitness', can_repeat_daily: false, max_per_day: 1 },
-{ name: '50 pompes', emoji: '💪', points: 2, type: 'positive', category: 'Fitness', can_repeat_daily: true, max_per_day: 3 },
-  { name: 'Stretching 15min', emoji: '🧘', points: 1, type: 'positive', category: 'Fitness', can_repeat_daily: false, max_per_day: 1 },
-  { name: 'Sport collectif', emoji: '⚽', points: 3, type: 'positive', category: 'Fitness', can_repeat_daily: false, max_per_day: 1 },
-  { name: '10km course', emoji: '🏅', points: 5, type: 'positive', category: 'Fitness', can_repeat_daily: false, max_per_day: 1 },
+  { name: 'Street workout', emoji: '💪', points: 5, type: 'positive', category: 'Fitness', can_repeat_daily: false, max_per_day: 1 },
 
   // NUTRITION
   { name: '3L d\'eau', emoji: '💧', points: 2, type: 'positive', category: 'Nutrition', can_repeat_daily: false, max_per_day: 1 },
@@ -29,15 +25,8 @@ export const DEFAULT_ACTIVITIES = [
 { name: 'Deliveroo', emoji: '🛵', points: -5, type: 'negative', category: 'Nutrition', can_repeat_daily: false, max_per_day: 1 },
   { name: 'Cheat meal', emoji: '🍔', points: -5, type: 'negative', category: 'Nutrition', can_repeat_daily: false, max_per_day: 1 },
 
-  // SOMMEIL
-  { name: '8h sommeil', emoji: '😴', points: 3, type: 'positive', category: 'Sommeil', can_repeat_daily: false, max_per_day: 1 },
-  { name: 'Réveil avant 9h', emoji: '⏰', points: 2, type: 'positive', category: 'Sommeil', can_repeat_daily: false, max_per_day: 1 },
-  { name: 'Coucher avant 00h', emoji: '🌙', points: 5, type: 'positive', category: 'Sommeil', can_repeat_daily: false, max_per_day: 1 },
-
-  { name: 'Moins de 6h sommeil', emoji: '😵', points: -3, type: 'negative', category: 'Sommeil', can_repeat_daily: false, max_per_day: 1 },
-  { name: '+10h sommeil', emoji: '🛌', points: -3, type: 'negative', category: 'Sommeil', can_repeat_daily: false, max_per_day: 1 },
-  { name: 'Couché après 01h', emoji: '🌃', points: -2, type: 'negative', category: 'Sommeil', can_repeat_daily: false, max_per_day: 1 },
-  { name: '11h30-13h30 / 19h-21h', emoji: '📵', points: -2, type: 'negative', category: 'Sommeil', can_repeat_daily: false, max_per_day: 1 },
+  // SOMMEIL (UI spéciale)
+  { name: 'Sommeil', emoji: '😴', points: 0, type: 'positive', category: 'Sommeil', can_repeat_daily: false, max_per_day: 1 },
 
   // ÉTUDES
   { name: 'Réviser 2h', emoji: '📚', points: 4, type: 'positive', category: 'Études', can_repeat_daily: true, max_per_day: 4 },
