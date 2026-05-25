@@ -138,7 +138,17 @@ export default async function ProfilPage({ params }: { params: Promise<{ usernam
                   <div className="flex items-center gap-3">
                     <span>{log.activity?.emoji}</span>
                     <div>
-                      <p className="text-sm text-white font-medium">{log.activity?.name}</p>
+                      <p className="text-sm text-white font-medium">
+                        {log.activity?.name}
+                        {log.notes
+                          ? ` · ${log.notes}`
+                          : log.activity?.name === 'Sommeil'
+                            ? log.points_earned === 3 ? ' · 8h–8h30 😴'
+                              : log.points_earned === -2 ? ' · ≤7h 😵'
+                              : log.points_earned === -3 ? ' · ≥10h 🛌'
+                              : ''
+                            : ''}
+                      </p>
                       <p className="text-xs text-gray-500">
                         {format(toParisDate(log.logged_at), 'dd MMM à HH:mm', { locale: fr })}
                       </p>
