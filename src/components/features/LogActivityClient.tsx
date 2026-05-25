@@ -12,10 +12,10 @@ import type { Activity, UserObjective } from '@/types'
 import { formatPoints, cn } from '@/lib/utils'
 import { ACTIVITY_CATEGORIES } from '@/lib/constants/activities'
 
-const SPORT_ACTIVITIES = ['Course à pied', 'Vélo', 'Natation', 'Salle de sport', 'Street workout']
+const SPORT_ACTIVITIES = ['Course à pied', 'Vélo', 'Natation', 'Salle de sport', 'Street workout', 'Pompes', 'Pas']
 const SLEEP_ACTIVITY = 'Sommeil'
 
-type SportDiscipline = 'course' | 'velo' | 'natation' | 'salle' | 'street'
+type SportDiscipline = 'course' | 'velo' | 'natation' | 'salle' | 'street' | 'pompes' | 'pas'
 
 const DISCIPLINES: { key: SportDiscipline; label: string; emoji: string }[] = [
   { key: 'course', label: 'Course', emoji: '🏃' },
@@ -23,6 +23,8 @@ const DISCIPLINES: { key: SportDiscipline; label: string; emoji: string }[] = [
   { key: 'natation', label: 'Natation', emoji: '🏊' },
   { key: 'salle', label: 'Salle', emoji: '🏋️' },
   { key: 'street', label: 'Street', emoji: '💪' },
+  { key: 'pompes', label: 'Pompes', emoji: '🤸' },
+  { key: 'pas', label: 'Pas', emoji: '👟' },
 ]
 
 function calcSportPoints(discipline: SportDiscipline, value: number): number {
@@ -32,6 +34,8 @@ function calcSportPoints(discipline: SportDiscipline, value: number): number {
     case 'natation': return Math.floor(value / 30) * 2
     case 'salle': return 5
     case 'street': return 5
+    case 'pompes': return Math.floor(value / 50) * 2
+    case 'pas': return Math.floor(value / 10000) * 2
   }
 }
 
@@ -216,13 +220,18 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
     const disciplineNames: Record<SportDiscipline, string> = {
       course: 'Course à pied', velo: 'Vélo', natation: 'Natation',
       salle: 'Salle de sport', street: 'Street workout',
+      pompes: 'Pompes', pas: 'Pas',
     }
-    const needsInput = discipline === 'course' || discipline === 'velo' || discipline === 'natation'
+    const needsInput = discipline !== 'salle' && discipline !== 'street'
     const val = parseFloat(sportValue)
     if (needsInput && (!sportValue || isNaN(val) || val <= 0)) return
 
     const pts = calcSportPoints(discipline, needsInput ? val : 1)
-    const unitLabel = discipline === 'natation' ? `${val} min` : discipline === 'course' || discipline === 'velo' ? `${val} km` : ''
+    const unitLabel =
+      discipline === 'natation' ? `${val} min` :
+      discipline === 'course' || discipline === 'velo' ? `${val} km` :
+      discipline === 'pompes' ? `${val} pompes` :
+      discipline === 'pas' ? `${val} pas` : ''
 
     setSportLoading(true)
     const ok = await logDirectly(disciplineNames[discipline], pts, unitLabel || undefined)
@@ -262,7 +271,8 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
   // Sport points preview
   const sportPoints = useMemo(() => {
     const val = parseFloat(sportValue)
-    if ((discipline === 'course' || discipline === 'velo' || discipline === 'natation') && (!sportValue || isNaN(val))) return null
+    const needsInput = discipline !== 'salle' && discipline !== 'street'
+    if (needsInput && (!sportValue || isNaN(val))) return null
     return calcSportPoints(discipline, val || 1)
   }, [discipline, sportValue])
 
@@ -477,7 +487,7 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
         <div className="space-y-4">
           <div>
             <p className="text-sm font-medium text-gray-300 mb-2">Discipline</p>
-            <div className="grid grid-cols-5 gap-2">
+            <div className="grid grid-cols-4 gap-2">
               {DISCIPLINES.map(d => (
                 <button
                   key={d.key}
@@ -523,6 +533,24 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
               placeholder="Ex: 45"
             />
           )}
+          {discipline === 'pompes' && (
+            <Input
+              label="Nombre de pompes"
+              type="number"
+              value={sportValue}
+              onChange={e => setSportValue(e.target.value)}
+              placeholder="Ex: 100"
+            />
+          )}
+          {discipline === 'pas' && (
+            <Input
+              label="Nombre de pas"
+              type="number"
+              value={sportValue}
+              onChange={e => setSportValue(e.target.value)}
+              placeholder="Ex: 10000"
+            />
+          )}
 
           {sportPoints !== null && (
             <div className={cn('p-3 rounded-xl text-center', sportPoints >= 0 ? 'bg-green-500/10 border border-green-500/20' : 'bg-red-500/10 border border-red-500/20')}>
@@ -556,7 +584,7 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
               onClick={handleSport}
               loading={sportLoading}
               disabled={
-                (discipline === 'course' || discipline === 'velo' || discipline === 'natation') &&
+                discipline !== 'salle' && discipline !== 'street' &&
                 (!sportValue || isNaN(parseFloat(sportValue)) || parseFloat(sportValue) <= 0)
               }
             >

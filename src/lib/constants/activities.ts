@@ -8,6 +8,7 @@ export const ACTIVITY_CATEGORIES: Omit<ActivityCategory, 'id'>[] = [
   { name: 'Dev perso', emoji: '🧠', color: '#8b5cf6', order_index: 4 },
   { name: 'Looksmax', emoji: '💅', color: '#ec4899', order_index: 5 },
   { name: 'Entrepreneuriat', emoji: '💼', color: '#f97316', order_index: 6 },
+  { name: 'Santé', emoji: '❤️', color: '#06b6d4', order_index: 7 },
 ]
 
 export const DEFAULT_ACTIVITIES = [
@@ -68,4 +69,5 @@ export const CATEGORY_COLORS: Record<string, string> = {
   'Dev perso': '#8b5cf6',
   'Looksmax': '#ec4899',
   'Entrepreneuriat': '#f97316',
+  'Santé': '#06b6d4',
 }
