@@ -4,9 +4,8 @@ import { useState } from 'react'
 import { Trash2 } from 'lucide-react'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import { formatPoints, toParisDate } from '@/lib/utils'
+import { formatPoints, toParisDate, cn } from '@/lib/utils'
 import { adminDeleteLog } from '@/app/(app)/profil/actions'
-import { cn } from '@/lib/utils'
 
 interface Log {
   id: string
