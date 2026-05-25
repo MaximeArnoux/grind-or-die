@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { formatPoints, formatTimeAgo, capitalizeFirst, cn } from '@/lib/utils'
 import { DashboardChart } from '@/components/features/DashboardChart'
 import { MandatoryChecklist } from '@/components/features/MandatoryChecklist'
+import { GroupChatClient } from '@/components/features/GroupChatClient'
 import { format, startOfWeek, endOfWeek, subDays } from 'date-fns'
 import { fr } from 'date-fns/locale'
 
@@ -110,6 +111,18 @@ export default async function DashboardPage() {
     }
   }
   const myRank = myGroupRanking.findIndex(m => m.user_id === user.id) + 1
+
+  // Chat messages for primary group
+  let initialMessages: any[] = []
+  if (primaryGroupId) {
+    const { data: msgs } = await supabase
+      .from('group_messages')
+      .select('id, user_id, content, created_at, profile:profiles(username, avatar_url)')
+      .eq('group_id', primaryGroupId)
+      .order('created_at', { ascending: true })
+      .limit(100)
+    initialMessages = msgs ?? []
+  }
 
   // Weekly chart
   const chartData = weeklyChartRes.map((res, i) => {
@@ -231,16 +244,17 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Points breakdown */}
-        <Card>
+        {/* Points breakdown + Chat */}
+        <Card className="flex flex-col min-h-[520px]">
+          {/* Répartition — partie haute */}
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>Répartition des points</CardTitle>
               <span className="text-2xl font-black text-white">{weekPoints}</span>
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-4 mb-4">
+          <CardContent className="pb-4">
+            <div className="flex items-center gap-4">
               <div className="w-24 h-24 relative flex items-center justify-center">
                 <svg viewBox="0 0 36 36" className="w-24 h-24 -rotate-90">
                   <circle cx="18" cy="18" r="15.9" fill="none" stroke="#1f2937" strokeWidth="3" />
@@ -272,6 +286,26 @@ export default async function DashboardPage() {
               </div>
             </div>
           </CardContent>
+
+          {/* Chat — partie basse */}
+          <div className="border-t border-gray-800 flex flex-col flex-1 min-h-0">
+            <div className="px-5 py-3 flex-shrink-0">
+              <p className="text-sm font-semibold text-white">
+                💬 Chat {primaryGroupName ? `— ${primaryGroupName}` : 'du groupe'}
+              </p>
+            </div>
+            {primaryGroupId ? (
+              <GroupChatClient
+                groupId={primaryGroupId}
+                userId={user.id}
+                initialMessages={initialMessages}
+              />
+            ) : (
+              <p className="text-center text-gray-600 text-sm py-8 px-4">
+                Rejoins un groupe pour accéder au chat
+              </p>
+            )}
+          </div>
         </Card>
       </div>
 
