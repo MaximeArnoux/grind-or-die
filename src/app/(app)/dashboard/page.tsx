@@ -112,16 +112,25 @@ export default async function DashboardPage() {
   }
   const myRank = myGroupRanking.findIndex(m => m.user_id === user.id) + 1
 
-  // Chat messages for primary group
+  // Chat messages for primary group (two separate queries to avoid FK join issues)
   let initialMessages: any[] = []
   if (primaryGroupId) {
     const { data: msgs } = await supabase
       .from('group_messages')
-      .select('id, user_id, content, created_at, profile:profiles(username, avatar_url)')
+      .select('id, user_id, content, created_at')
       .eq('group_id', primaryGroupId)
       .order('created_at', { ascending: true })
-      .limit(100)
-    initialMessages = msgs ?? []
+
+    if (msgs && msgs.length > 0) {
+      const uniqueUserIds = [...new Set(msgs.map(m => m.user_id))]
+      const { data: msgProfiles } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url')
+        .in('id', uniqueUserIds)
+
+      const profileMap = new Map((msgProfiles ?? []).map(p => [p.id, { username: p.username, avatar_url: p.avatar_url }]))
+      initialMessages = msgs.map(m => ({ ...m, profile: profileMap.get(m.user_id) ?? null }))
+    }
   }
 
   // Weekly chart
