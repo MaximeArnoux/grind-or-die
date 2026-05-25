@@ -6,7 +6,7 @@ import { format, startOfWeek } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { WeightChartClient } from '@/components/features/WeightChartClient'
 import { ProfileLogsClient } from '@/components/features/ProfileLogsClient'
-import { formatPoints, capitalizeFirst, toParisDate } from '@/lib/utils'
+import { capitalizeFirst } from '@/lib/utils'
 import { ADMIN_USER_ID } from '@/lib/constants/admin'
 
 export default async function ProfilPage({ params }: { params: Promise<{ username: string }> }) {

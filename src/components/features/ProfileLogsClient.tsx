@@ -29,7 +29,7 @@ export function ProfileLogsClient({ logs: initialLogs, isAdmin, username }: Prop
   async function handleDelete(logId: string) {
     setDeleting(logId)
     const result = await adminDeleteLog(logId, username)
-    if (!result.error) {
+    if (result.success) {
       setLogs(prev => prev.filter(l => l.id !== logId))
     }
     setDeleting(null)
