@@ -254,7 +254,7 @@ export default async function DashboardPage() {
         </Card>
 
         {/* Points breakdown + Chat */}
-        <Card className="flex flex-col min-h-[520px]">
+        <Card className="flex flex-col">
           {/* Répartition — partie haute */}
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -296,8 +296,8 @@ export default async function DashboardPage() {
             </div>
           </CardContent>
 
-          {/* Chat — partie basse */}
-          <div className="border-t border-gray-800 flex flex-col flex-1 min-h-0">
+          {/* Chat — partie basse, hauteur fixe */}
+          <div className="border-t border-gray-800 flex flex-col h-[320px]">
             <div className="px-5 py-3 flex-shrink-0">
               <p className="text-sm font-semibold text-white">
                 💬 Chat {primaryGroupName ? `— ${primaryGroupName}` : 'du groupe'}
