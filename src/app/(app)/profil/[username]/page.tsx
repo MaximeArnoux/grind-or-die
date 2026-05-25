@@ -134,6 +134,7 @@ export default async function ProfilPage({ params }: { params: Promise<{ usernam
           <div className="flex items-center justify-between">
             <CardTitle>Activités récentes</CardTitle>
             {isAdmin && <span className="text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded-lg font-medium">🔑 Mode admin</span>}
+            {isOwn && !isAdmin && <span className="text-[10px] text-gray-600 font-mono">{user?.id}</span>}
           </div>
         </CardHeader>
         <CardContent>
