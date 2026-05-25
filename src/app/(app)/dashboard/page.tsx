@@ -212,7 +212,7 @@ export default async function DashboardPage() {
               </div>
             ) : (
               <div className="space-y-1.5">
-                {myGroupRanking.slice(0, 5).map(member => (
+                {myGroupRanking.map(member => (
                   <div
                     key={member.user_id}
                     className={cn(
