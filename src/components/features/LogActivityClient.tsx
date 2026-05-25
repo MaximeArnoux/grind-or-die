@@ -47,6 +47,14 @@ function calcSleepPoints(hours: number, minutes: number): number {
   return 0
 }
 
+function calcBedtimePoints(hours: number, minutes: number): number {
+  if (hours >= 20) return 2                        // 20h–23h59 : avant minuit
+  if (hours === 0 && minutes === 0) return 2       // exactement minuit
+  if (hours === 0) return 0                        // 00h01–00h59
+  if (hours <= 2) return 0                         // 01h00–02h59
+  return -4                                        // 03h00+
+}
+
 interface CartItem {
   activity: Activity
   count: number
@@ -88,6 +96,8 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
   const [showSleep, setShowSleep] = useState(false)
   const [sleepHours, setSleepHours] = useState('')
   const [sleepMinutes, setSleepMinutes] = useState('0')
+  const [bedtimeHours, setBedtimeHours] = useState('')
+  const [bedtimeMinutes, setBedtimeMinutes] = useState('0')
   const [sleepLoading, setSleepLoading] = useState(false)
 
   // Create activity modal
@@ -242,14 +252,28 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
   async function handleSleep() {
     const h = parseInt(sleepHours)
     const m = parseInt(sleepMinutes)
+    const bh = parseInt(bedtimeHours)
+    const bm = parseInt(bedtimeMinutes)
     if (isNaN(h) || h < 0 || h > 23) return
-    const pts = calcSleepPoints(h, isNaN(m) ? 0 : m)
-    const notes = `${h}h${String(isNaN(m) ? 0 : m).padStart(2, '0')}`
+    if (isNaN(bh) || bh < 0 || bh > 23) return
+
+    const durationPts = calcSleepPoints(h, isNaN(m) ? 0 : m)
+    const bedtimePts = calcBedtimePoints(bh, isNaN(bm) ? 0 : bm)
+    const totalPts = durationPts + bedtimePts
+
+    const durationStr = `${h}h${String(isNaN(m) ? 0 : m).padStart(2, '0')}`
+    const bedtimeStr = `${bh}h${String(isNaN(bm) ? 0 : bm).padStart(2, '0')}`
+    const notes = `${durationStr} · couché à ${bedtimeStr}`
 
     setSleepLoading(true)
-    const ok = await logDirectly(SLEEP_ACTIVITY, pts, notes)
+    const ok = await logDirectly(SLEEP_ACTIVITY, totalPts, notes)
     setSleepLoading(false)
-    if (ok) { setShowSleep(false); setSleepHours(''); setSleepMinutes('0'); router.refresh() }
+    if (ok) {
+      setShowSleep(false)
+      setSleepHours(''); setSleepMinutes('0')
+      setBedtimeHours(''); setBedtimeMinutes('0')
+      router.refresh()
+    }
   }
 
   async function handleCreate() {
@@ -280,9 +304,13 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
   const sleepPoints = useMemo(() => {
     const h = parseInt(sleepHours)
     const m = parseInt(sleepMinutes)
+    const bh = parseInt(bedtimeHours)
+    const bm = parseInt(bedtimeMinutes)
     if (isNaN(h) || sleepHours === '') return null
-    return calcSleepPoints(h, isNaN(m) ? 0 : m)
-  }, [sleepHours, sleepMinutes])
+    const durPts = calcSleepPoints(h, isNaN(m) ? 0 : m)
+    const bedPts = isNaN(bh) || bedtimeHours === '' ? 0 : calcBedtimePoints(bh, isNaN(bm) ? 0 : bm)
+    return { duration: durPts, bedtime: bedPts, total: durPts + bedPts, hasBedtime: bedtimeHours !== '' }
+  }, [sleepHours, sleepMinutes, bedtimeHours, bedtimeMinutes])
 
   return (
     <div className={cn('space-y-5', cart.length > 0 ? 'pb-52 lg:pb-48' : '')}>
@@ -595,49 +623,70 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
       </Modal>
 
       {/* Sleep modal */}
-      <Modal open={showSleep} onClose={() => { setShowSleep(false); setSleepHours('') }} title="😴 Durée de sommeil">
+      <Modal open={showSleep} onClose={() => { setShowSleep(false); setSleepHours(''); setBedtimeHours('') }} title="😴 Sommeil">
         <div className="space-y-4">
+          {/* Durée de sommeil */}
           <div>
             <p className="text-sm font-medium text-gray-300 mb-3">Combien de temps as-tu dormi ?</p>
             <div className="flex items-center gap-3">
               <div className="flex-1">
-                <Input
-                  label="Heures"
-                  type="number"
-                  value={sleepHours}
-                  onChange={e => setSleepHours(e.target.value)}
-                  placeholder="8"
-                />
+                <Input label="Heures" type="number" value={sleepHours} onChange={e => setSleepHours(e.target.value)} placeholder="8" />
               </div>
               <span className="text-gray-500 text-xl mt-5">h</span>
               <div className="flex-1">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-sm font-medium text-gray-300">Minutes</label>
-                  <select
-                    value={sleepMinutes}
-                    onChange={e => setSleepMinutes(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-sm text-gray-100 focus:outline-none focus:border-violet-500"
-                  >
-                    {[0, 15, 30, 45].map(m => (
-                      <option key={m} value={m}>{String(m).padStart(2, '0')}</option>
-                    ))}
+                  <select value={sleepMinutes} onChange={e => setSleepMinutes(e.target.value)} className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-sm text-gray-100 focus:outline-none focus:border-violet-500">
+                    {[0, 15, 30, 45].map(m => <option key={m} value={m}>{String(m).padStart(2, '0')}</option>)}
                   </select>
                 </div>
               </div>
             </div>
           </div>
 
+          {/* Heure de coucher */}
+          <div>
+            <p className="text-sm font-medium text-gray-300 mb-3">À quelle heure t'es-tu couché ?</p>
+            <div className="flex items-center gap-3">
+              <div className="flex-1">
+                <Input label="Heure" type="number" min={0} max={23} value={bedtimeHours} onChange={e => setBedtimeHours(e.target.value)} placeholder="23" />
+              </div>
+              <span className="text-gray-500 text-xl mt-5">h</span>
+              <div className="flex-1">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-medium text-gray-300">Minutes</label>
+                  <select value={bedtimeMinutes} onChange={e => setBedtimeMinutes(e.target.value)} className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-sm text-gray-100 focus:outline-none focus:border-violet-500">
+                    {[0, 15, 30, 45].map(m => <option key={m} value={m}>{String(m).padStart(2, '0')}</option>)}
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Preview points */}
           {sleepPoints !== null && (
-            <div className={cn('p-3 rounded-xl border text-center', sleepPoints > 0 ? 'bg-green-500/10 border-green-500/20' : sleepPoints < 0 ? 'bg-red-500/10 border-red-500/20' : 'bg-gray-800/50 border-gray-700')}>
-              <p className={cn('text-2xl font-black', sleepPoints > 0 ? 'text-green-400' : sleepPoints < 0 ? 'text-red-400' : 'text-gray-400')}>
-                {sleepPoints > 0 ? '+' : ''}{sleepPoints} pts
+            <div className={cn('p-3 rounded-xl border', sleepPoints.total > 0 ? 'bg-green-500/10 border-green-500/20' : sleepPoints.total < 0 ? 'bg-red-500/10 border-red-500/20' : 'bg-gray-800/50 border-gray-700')}>
+              <p className={cn('text-2xl font-black text-center', sleepPoints.total > 0 ? 'text-green-400' : sleepPoints.total < 0 ? 'text-red-400' : 'text-gray-400')}>
+                {sleepPoints.total > 0 ? '+' : ''}{sleepPoints.total} pts
               </p>
-              <p className="text-xs text-gray-500 mt-1">
-                {sleepPoints === 3 ? '8h–8h30 : sommeil optimal 🎯' :
-                 sleepPoints === -2 ? '≤7h : manque de sommeil' :
-                 sleepPoints === -3 ? '≥10h : trop de sommeil' :
-                 'Hors critères — enregistré sans points'}
-              </p>
+              <div className="mt-2 space-y-1">
+                <div className="flex justify-between text-xs text-gray-500">
+                  <span>Durée de sommeil</span>
+                  <span className={sleepPoints.duration > 0 ? 'text-green-400' : sleepPoints.duration < 0 ? 'text-red-400' : ''}>
+                    {sleepPoints.duration > 0 ? '+' : ''}{sleepPoints.duration} pts
+                    {sleepPoints.duration === 3 ? ' (8h–8h30 🎯)' : sleepPoints.duration === -2 ? ' (≤7h)' : sleepPoints.duration === -3 ? ' (≥10h)' : ' (neutre)'}
+                  </span>
+                </div>
+                {sleepPoints.hasBedtime && (
+                  <div className="flex justify-between text-xs text-gray-500">
+                    <span>Heure de coucher</span>
+                    <span className={sleepPoints.bedtime > 0 ? 'text-green-400' : sleepPoints.bedtime < 0 ? 'text-red-400' : ''}>
+                      {sleepPoints.bedtime > 0 ? '+' : ''}{sleepPoints.bedtime} pts
+                      {sleepPoints.bedtime === 2 ? ' (avant minuit 🌙)' : sleepPoints.bedtime === -4 ? ' (après 3h 😵)' : ' (neutre)'}
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -646,11 +695,7 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
               <p className="text-xs text-gray-500 mb-2">Compter dans les groupes :</p>
               <div className="flex flex-wrap gap-2">
                 {userGroups.map(group => (
-                  <button
-                    key={group.id}
-                    onClick={() => toggleGroup(group.id)}
-                    className={cn('px-3 py-1 rounded-lg text-xs font-medium transition-colors', selectedGroupIds.includes(group.id) ? 'bg-violet-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white')}
-                  >
+                  <button key={group.id} onClick={() => toggleGroup(group.id)} className={cn('px-3 py-1 rounded-lg text-xs font-medium transition-colors', selectedGroupIds.includes(group.id) ? 'bg-violet-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white')}>
                     {group.name}
                   </button>
                 ))}
@@ -659,8 +704,9 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
           )}
 
           <div className="flex gap-3">
-            <Button variant="secondary" className="flex-1" onClick={() => { setShowSleep(false); setSleepHours('') }}>Annuler</Button>
-            <Button className="flex-1" onClick={handleSleep} loading={sleepLoading} disabled={sleepHours === '' || isNaN(parseInt(sleepHours))}>
+            <Button variant="secondary" className="flex-1" onClick={() => { setShowSleep(false); setSleepHours(''); setBedtimeHours('') }}>Annuler</Button>
+            <Button className="flex-1" onClick={handleSleep} loading={sleepLoading}
+              disabled={sleepHours === '' || isNaN(parseInt(sleepHours)) || bedtimeHours === '' || isNaN(parseInt(bedtimeHours))}>
               Ajouter
             </Button>
           </div>
