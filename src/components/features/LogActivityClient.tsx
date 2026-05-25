@@ -144,7 +144,7 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
     const multiplier = objective?.multiplier ?? 1
     setCart(prev => {
       const existing = prev.find(i => i.activity.id === activity.id)
-      if (existing) return prev.map(i => i.activity.id === activity.id ? { ...i, count: i.count + 1 } : i)
+      if (existing) return prev.filter(i => i.activity.id !== activity.id)
       return [...prev, { activity, count: 1, notes: '', multiplier }]
     })
   }
