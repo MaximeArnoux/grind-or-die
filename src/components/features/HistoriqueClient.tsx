@@ -110,8 +110,12 @@ export function HistoriqueClient({ logs }: { logs: any[] }) {
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className={cn('text-sm font-bold', log.points_earned >= 0 ? 'text-green-400' : 'text-red-400')}>
-                        {formatPoints(log.points_earned)} pts
+                      <span className={cn('text-sm font-bold',
+                        log.points_earned > 0 ? 'text-green-400' :
+                        log.points_earned < 0 ? 'text-red-400' :
+                        'text-gray-500'
+                      )}>
+                        {log.points_earned === 0 ? '+0' : formatPoints(log.points_earned)} pts
                       </span>
                       <button
                         onClick={() => setDeleteLog(log)}
