@@ -26,15 +26,15 @@ export function GroupChatClient({ groupId, userId, initialMessages }: Props) {
   const [messages, setMessages] = useState<Message[]>(initialMessages)
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
-  const bottomRef = useRef<HTMLDivElement>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'instant' })
-  }, [])
+  function scrollToBottom(behavior: ScrollBehavior = 'smooth') {
+    const el = scrollRef.current
+    if (el) el.scrollTop = el.scrollHeight
+  }
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+  useEffect(() => { scrollToBottom('instant') }, [])
+  useEffect(() => { scrollToBottom('smooth') }, [messages])
 
   useEffect(() => {
     const channel = supabase
@@ -82,7 +82,7 @@ export function GroupChatClient({ groupId, userId, initialMessages }: Props) {
   return (
     <div className="flex flex-col h-full min-h-0">
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 min-h-0">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-3 min-h-0">
         {messages.length === 0 && (
           <p className="text-center text-gray-600 text-sm py-8">Aucun message — soyez le premier !</p>
         )}
@@ -116,7 +116,6 @@ export function GroupChatClient({ groupId, userId, initialMessages }: Props) {
             </div>
           )
         })}
-        <div ref={bottomRef} />
       </div>
 
       {/* Input */}
