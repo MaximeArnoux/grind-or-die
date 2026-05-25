@@ -43,7 +43,13 @@ export default async function ProfilPage({ params }: { params: Promise<{ usernam
   const streak = streakRes.data
   const objectives = objectivesRes.data ?? []
   const weightLogs = weightLogsRes.data ?? []
-  const recentLogs = recentLogsRes.data ?? []
+  const recentLogs = (recentLogsRes.data ?? []).map(l => ({
+    id: l.id as string,
+    points_earned: l.points_earned as number,
+    logged_at: l.logged_at as string,
+    notes: l.notes as string | null,
+    activity: (Array.isArray(l.activity) ? l.activity[0] : l.activity) as { name: string | null; emoji: string | null } | null,
+  }))
 
   const latestWeight = weightLogs[weightLogs.length - 1]?.weight_kg
 
