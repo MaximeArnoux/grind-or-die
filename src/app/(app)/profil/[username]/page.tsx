@@ -130,7 +130,12 @@ export default async function ProfilPage({ params }: { params: Promise<{ usernam
 
       {/* Recent activity */}
       <Card>
-        <CardHeader><CardTitle>Activités récentes</CardTitle></CardHeader>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Activités récentes</CardTitle>
+            {isAdmin && <span className="text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded-lg font-medium">🔑 Mode admin</span>}
+          </div>
+        </CardHeader>
         <CardContent>
           <ProfileLogsClient
             logs={recentLogs}

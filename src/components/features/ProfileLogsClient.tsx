@@ -63,7 +63,7 @@ export function ProfileLogsClient({ logs: initialLogs, isAdmin, username }: Prop
               <button
                 onClick={() => handleDelete(log.id)}
                 disabled={deleting === log.id}
-                className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-red-500/10 text-gray-600 hover:text-red-400 transition-all disabled:opacity-50"
+                className="p-1.5 rounded-lg hover:bg-red-500/10 text-gray-600 hover:text-red-400 transition-all disabled:opacity-30"
               >
                 <Trash2 size={13} />
               </button>
