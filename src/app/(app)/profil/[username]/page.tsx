@@ -5,7 +5,9 @@ import { Badge } from '@/components/ui/Badge'
 import { format, startOfWeek } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { WeightChartClient } from '@/components/features/WeightChartClient'
+import { ProfileLogsClient } from '@/components/features/ProfileLogsClient'
 import { formatPoints, capitalizeFirst, toParisDate } from '@/lib/utils'
+import { ADMIN_USER_ID } from '@/lib/constants/admin'
 
 export default async function ProfilPage({ params }: { params: Promise<{ username: string }> }) {
   const { username } = await params
@@ -21,6 +23,7 @@ export default async function ProfilPage({ params }: { params: Promise<{ usernam
   if (!profile) notFound()
 
   const isOwn = user?.id === profile.id
+  const isAdmin = user?.id === ADMIN_USER_ID
   const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 })
 
   const [totalPointsRes, weekPointsRes, streakRes, objectivesRes, weightLogsRes, recentLogsRes] = await Promise.all([
@@ -30,10 +33,10 @@ export default async function ProfilPage({ params }: { params: Promise<{ usernam
     supabase.from('user_objectives').select('*, activity:activities(name, emoji)').eq('user_id', profile.id).eq('is_active', true),
     supabase.from('weight_logs').select('*').eq('user_id', profile.id).order('logged_at').limit(30),
     supabase.from('activity_logs')
-      .select('*, activity:activities(name, emoji, type)')
+      .select('id, points_earned, logged_at, notes, activity:activities(name, emoji, type)')
       .eq('user_id', profile.id)
       .order('logged_at', { ascending: false })
-      .limit(10),
+      .limit(user?.id === ADMIN_USER_ID ? 50 : 10),
   ])
 
   const totalPoints = (totalPointsRes.data ?? []).reduce((sum, l) => sum + l.points_earned, 0)
@@ -129,38 +132,11 @@ export default async function ProfilPage({ params }: { params: Promise<{ usernam
       <Card>
         <CardHeader><CardTitle>Activités récentes</CardTitle></CardHeader>
         <CardContent>
-          {recentLogs.length === 0 ? (
-            <p className="text-gray-600 text-sm text-center py-8">Aucune activité</p>
-          ) : (
-            <div className="space-y-2">
-              {recentLogs.map((log: any) => (
-                <div key={log.id} className="flex items-center justify-between py-2 border-b border-gray-800/50 last:border-0">
-                  <div className="flex items-center gap-3">
-                    <span>{log.activity?.emoji}</span>
-                    <div>
-                      <p className="text-sm text-white font-medium">
-                        {log.activity?.name}
-                        {log.notes
-                          ? ` · ${log.notes}`
-                          : log.activity?.name === 'Sommeil'
-                            ? log.points_earned === 3 ? ' · 8h–8h30 😴'
-                              : log.points_earned === -2 ? ' · ≤7h 😵'
-                              : log.points_earned === -3 ? ' · ≥10h 🛌'
-                              : ''
-                            : ''}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {format(toParisDate(log.logged_at), 'dd MMM à HH:mm', { locale: fr })}
-                      </p>
-                    </div>
-                  </div>
-                  <span className={`text-sm font-bold ${log.points_earned >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    {formatPoints(log.points_earned)} pts
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
+          <ProfileLogsClient
+            logs={recentLogs}
+            isAdmin={isAdmin}
+            username={profile.username}
+          />
         </CardContent>
       </Card>
     </div>
