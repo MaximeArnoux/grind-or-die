@@ -14,6 +14,7 @@ import { ACTIVITY_CATEGORIES } from '@/lib/constants/activities'
 
 const SPORT_ACTIVITIES = ['Course à pied', 'Vélo', 'Natation', 'Salle de sport', 'Street workout', 'Pompes', 'Pas']
 const SLEEP_ACTIVITY = 'Sommeil'
+const SPECIAL_ACTIVITIES = ['Jeux vidéo', 'Réseaux sociaux']
 
 type SportDiscipline = 'course' | 'velo' | 'natation' | 'salle' | 'street' | 'pompes' | 'pas'
 
@@ -45,6 +46,15 @@ function calcSleepPoints(hours: number, minutes: number): number {
   if (total >= 10 * 60) return -3
   if (total >= 8 * 60 && total <= 8 * 60 + 30) return 3
   return 0
+}
+
+function calcJeuxPoints(hours: number): number {
+  return -3 - (hours - 3) * 2
+}
+
+function calcReseauxPoints(hours: number, minutes: number): number {
+  const totalMinutes = hours * 60 + minutes
+  return -3 - Math.floor((totalMinutes - 120) / 30)
 }
 
 function calcBedtimePoints(hours: number, minutes: number): number {
@@ -101,6 +111,17 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
   const [bedtimeMinutes, setBedtimeMinutes] = useState('0')
   const [sleepLoading, setSleepLoading] = useState(false)
 
+  // Jeux vidéo modal
+  const [showJeux, setShowJeux] = useState(false)
+  const [jeuxHours, setJeuxHours] = useState('')
+  const [jeuxLoading, setJeuxLoading] = useState(false)
+
+  // Réseaux sociaux modal
+  const [showReseaux, setShowReseaux] = useState(false)
+  const [reseauxHours, setReseauxHours] = useState('')
+  const [reseauxMinutes, setReseauxMinutes] = useState('0')
+  const [reseauxLoading, setReseauxLoading] = useState(false)
+
   // Create activity modal
   const [showCreate, setShowCreate] = useState(false)
   const [newName, setNewName] = useState('')
@@ -121,6 +142,7 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
     return activities.filter(a => {
       const cat = a.category?.name
       if (cat === 'Fitness' || cat === 'Sommeil') return false
+      if (SPECIAL_ACTIVITIES.includes(a.name)) return false
       const key = a.name.trim().toLowerCase()
       if (seen.has(key)) return false
       seen.add(key)
@@ -284,6 +306,29 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
     }
   }
 
+  async function handleJeux() {
+    const h = parseInt(jeuxHours)
+    if (isNaN(h) || h < 3) return
+    const pts = calcJeuxPoints(h)
+    setJeuxLoading(true)
+    const ok = await logDirectly('Jeux vidéo', pts, `${h}h de jeux`)
+    setJeuxLoading(false)
+    if (ok) { setShowJeux(false); setJeuxHours(''); router.refresh() }
+  }
+
+  async function handleReseaux() {
+    const h = parseInt(reseauxHours)
+    const m = parseInt(reseauxMinutes)
+    const totalMin = h * 60 + (isNaN(m) ? 0 : m)
+    if (isNaN(h) || totalMin < 120) return
+    const pts = calcReseauxPoints(h, isNaN(m) ? 0 : m)
+    const mStr = !isNaN(m) && m > 0 ? `h${m}` : 'h'
+    setReseauxLoading(true)
+    const ok = await logDirectly('Réseaux sociaux', pts, `${h}${mStr} de réseaux`)
+    setReseauxLoading(false)
+    if (ok) { setShowReseaux(false); setReseauxHours(''); setReseauxMinutes('0'); router.refresh() }
+  }
+
   async function handleCreate() {
     const pts = parseInt(newPoints)
     if (!newName || isNaN(pts)) return
@@ -307,6 +352,22 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
     if (needsInput && (!sportValue || isNaN(val))) return null
     return calcSportPoints(discipline, val || 1)
   }, [discipline, sportValue])
+
+  // Jeux points preview
+  const jeuxPoints = useMemo(() => {
+    const h = parseInt(jeuxHours)
+    if (isNaN(h) || h < 3) return null
+    return calcJeuxPoints(h)
+  }, [jeuxHours])
+
+  // Réseaux points preview
+  const reseauxPoints = useMemo(() => {
+    const h = parseInt(reseauxHours)
+    const m = parseInt(reseauxMinutes)
+    const total = h * 60 + (isNaN(m) ? 0 : m)
+    if (isNaN(h) || reseauxHours === '' || total < 120) return null
+    return calcReseauxPoints(h, isNaN(m) ? 0 : m)
+  }, [reseauxHours, reseauxMinutes])
 
   // Sleep points preview
   const sleepPoints = useMemo(() => {
@@ -355,27 +416,35 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
         </Button>
       </div>
 
-      {/* Sport & Sommeil special cards */}
+      {/* Special activity cards */}
       {!search && !selectedCategory && (
         <div className="grid grid-cols-2 gap-3">
-          <button
-            onClick={() => setShowSport(true)}
-            className="flex items-center gap-3 p-4 rounded-xl border border-green-500/30 bg-green-500/5 hover:bg-green-500/10 transition-all text-left"
-          >
+          <button onClick={() => setShowSport(true)} className="flex items-center gap-3 p-4 rounded-xl border border-green-500/30 bg-green-500/5 hover:bg-green-500/10 transition-all text-left">
             <span className="text-2xl">🏃</span>
             <div>
               <p className="text-sm font-bold text-white">Sport</p>
               <p className="text-xs text-gray-500">Course, vélo, natation…</p>
             </div>
           </button>
-          <button
-            onClick={() => setShowSleep(true)}
-            className="flex items-center gap-3 p-4 rounded-xl border border-indigo-500/30 bg-indigo-500/5 hover:bg-indigo-500/10 transition-all text-left"
-          >
+          <button onClick={() => setShowSleep(true)} className="flex items-center gap-3 p-4 rounded-xl border border-indigo-500/30 bg-indigo-500/5 hover:bg-indigo-500/10 transition-all text-left">
             <span className="text-2xl">😴</span>
             <div>
               <p className="text-sm font-bold text-white">Sommeil</p>
               <p className="text-xs text-gray-500">Durée de la nuit</p>
+            </div>
+          </button>
+          <button onClick={() => setShowJeux(true)} className="flex items-center gap-3 p-4 rounded-xl border border-red-500/30 bg-red-500/5 hover:bg-red-500/10 transition-all text-left">
+            <span className="text-2xl">🎮</span>
+            <div>
+              <p className="text-sm font-bold text-white">Jeux vidéo</p>
+              <p className="text-xs text-gray-500">+3h = −3 pts</p>
+            </div>
+          </button>
+          <button onClick={() => setShowReseaux(true)} className="flex items-center gap-3 p-4 rounded-xl border border-orange-500/30 bg-orange-500/5 hover:bg-orange-500/10 transition-all text-left">
+            <span className="text-2xl">📱</span>
+            <div>
+              <p className="text-sm font-bold text-white">Réseaux sociaux</p>
+              <p className="text-xs text-gray-500">+2h = −3 pts</p>
             </div>
           </button>
         </div>
@@ -731,6 +800,71 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
             <Button variant="secondary" className="flex-1" onClick={() => { setShowSleep(false); setSleepHours(''); setBedtimeHours('') }}>Annuler</Button>
             <Button className="flex-1" onClick={handleSleep} loading={sleepLoading}
               disabled={sleepHours === '' || isNaN(parseInt(sleepHours)) || bedtimeHours === '' || isNaN(parseInt(bedtimeHours))}>
+              Ajouter
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Jeux vidéo modal */}
+      <Modal open={showJeux} onClose={() => { setShowJeux(false); setJeuxHours('') }} title="🎮 Jeux vidéo">
+        <div className="space-y-4">
+          <p className="text-xs text-gray-500">Minimum 3h · −3 pts, puis −2 pts par heure supplémentaire</p>
+          <Input
+            label="Nombre d'heures"
+            type="number"
+            min={3}
+            value={jeuxHours}
+            onChange={e => setJeuxHours(e.target.value)}
+            placeholder="Ex: 4"
+          />
+          {jeuxPoints !== null && (
+            <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-center">
+              <span className="text-2xl font-black text-red-400">{jeuxPoints} pts</span>
+            </div>
+          )}
+          {jeuxHours !== '' && (parseInt(jeuxHours) < 3) && (
+            <p className="text-xs text-red-400 text-center">Minimum 3h pour logger les jeux vidéo</p>
+          )}
+          <div className="flex gap-3">
+            <Button variant="secondary" className="flex-1" onClick={() => { setShowJeux(false); setJeuxHours('') }}>Annuler</Button>
+            <Button className="flex-1" onClick={handleJeux} loading={jeuxLoading} disabled={isNaN(parseInt(jeuxHours)) || parseInt(jeuxHours) < 3}>
+              Ajouter
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Réseaux sociaux modal */}
+      <Modal open={showReseaux} onClose={() => { setShowReseaux(false); setReseauxHours(''); setReseauxMinutes('0') }} title="📱 Réseaux sociaux">
+        <div className="space-y-4">
+          <p className="text-xs text-gray-500">Minimum 2h · −3 pts, puis −1 pt par 30 min supplémentaires</p>
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
+              <Input label="Heures" type="number" min={2} value={reseauxHours} onChange={e => setReseauxHours(e.target.value)} placeholder="2" />
+            </div>
+            <span className="text-gray-500 text-xl mt-5">h</span>
+            <div className="flex-1">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-gray-300">Minutes</label>
+                <select value={reseauxMinutes} onChange={e => setReseauxMinutes(e.target.value)} className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-sm text-gray-100 focus:outline-none focus:border-violet-500">
+                  {[0, 30].map(m => <option key={m} value={m}>{String(m).padStart(2, '0')}</option>)}
+                </select>
+              </div>
+            </div>
+          </div>
+          {reseauxPoints !== null && (
+            <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-center">
+              <span className="text-2xl font-black text-red-400">{reseauxPoints} pts</span>
+            </div>
+          )}
+          {reseauxHours !== '' && (parseInt(reseauxHours) * 60 + parseInt(reseauxMinutes || '0')) < 120 && (
+            <p className="text-xs text-red-400 text-center">Minimum 2h pour logger les réseaux sociaux</p>
+          )}
+          <div className="flex gap-3">
+            <Button variant="secondary" className="flex-1" onClick={() => { setShowReseaux(false); setReseauxHours(''); setReseauxMinutes('0') }}>Annuler</Button>
+            <Button className="flex-1" onClick={handleReseaux} loading={reseauxLoading}
+              disabled={reseauxHours === '' || isNaN(parseInt(reseauxHours)) || (parseInt(reseauxHours) * 60 + parseInt(reseauxMinutes || '0')) < 120}>
               Ajouter
             </Button>
           </div>
