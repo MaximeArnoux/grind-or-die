@@ -85,6 +85,7 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([])
+  const [logDate, setLogDate] = useState<'today' | 'yesterday'>('today')
 
   // Sport modal
   const [showSport, setShowSport] = useState(false)
@@ -184,12 +185,18 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
     )
   }
 
+  function getLogTimestamp(): string {
+    const d = new Date()
+    if (logDate === 'yesterday') d.setDate(d.getDate() - 1)
+    return d.toISOString()
+  }
+
   async function logDirectly(activityName: string, pointsEarned: number, notes?: string) {
     const activity = activities.find(a => a.name === activityName)
     if (!activity) return false
     const { data: inserted, error } = await supabase
       .from('activity_logs')
-      .insert({ user_id: userId, activity_id: activity.id, points_earned: pointsEarned, multiplier: 1, notes: notes ?? null })
+      .insert({ user_id: userId, activity_id: activity.id, points_earned: pointsEarned, multiplier: 1, notes: notes ?? null, logged_at: getLogTimestamp() })
       .select('id')
     if (error || !inserted) return false
     if (selectedGroupIds.length > 0) {
@@ -210,6 +217,7 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
         points_earned: Math.round(item.activity.points * item.count * item.multiplier),
         multiplier: item.multiplier,
         notes: item.notes || null,
+        logged_at: getLogTimestamp(),
       }))
       const { data: insertedLogs, error } = await supabase.from('activity_logs').insert(inserts).select('id')
       if (!error && insertedLogs && selectedGroupIds.length > 0) {
@@ -314,6 +322,22 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
 
   return (
     <div className={cn('space-y-5', cart.length > 0 ? 'pb-52 lg:pb-48' : '')}>
+      {/* Date selector */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => setLogDate('today')}
+          className={cn('flex-1 py-2 rounded-xl text-sm font-semibold transition-all', logDate === 'today' ? 'bg-violet-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white')}
+        >
+          Aujourd'hui
+        </button>
+        <button
+          onClick={() => setLogDate('yesterday')}
+          className={cn('flex-1 py-2 rounded-xl text-sm font-semibold transition-all', logDate === 'yesterday' ? 'bg-violet-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white')}
+        >
+          Hier
+        </button>
+      </div>
+
       {/* Search + New */}
       <div className="flex gap-3">
         <div className="flex-1 relative">
