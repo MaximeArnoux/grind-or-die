@@ -44,7 +44,7 @@ function calcSleepPoints(hours: number, minutes: number): number {
   const total = hours * 60 + minutes
   if (total <= 7 * 60) return -2
   if (total >= 10 * 60) return -3
-  if (total >= 8 * 60 && total <= 8 * 60 + 30) return 3
+  if (total >= 8 * 60 && total <= 9 * 60) return 3
   return 0
 }
 
