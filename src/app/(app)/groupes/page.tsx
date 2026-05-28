@@ -51,58 +51,46 @@ export default async function GroupesPage() {
 
   const membershipMap = new Map((memberships ?? []).map((m: any) => [m.group_id, m]))
 
-  // Step 3: for each group, fetch members + weekly ranking
-  const groupsWithRankings = await Promise.all(
-    (groupsData ?? []).map(async (group) => {
-      const membership = membershipMap.get(group.id)
-      if (!membership) return null
+  // Step 3: fetch all groups' members in parallel, then all logs in one query
+  const groups = (groupsData ?? []) as { id: string; name: string; [key: string]: any }[]
 
-      const { data: members } = await supabase
-        .from('group_members')
-        .select('user_id, role, joined_at, profile:profiles(username, avatar_url)')
-        .eq('group_id', group.id)
-
-      const memberIds = (members ?? []).map((m: any) => m.user_id)
-
-      let weeklyLogs: any[] = []
-      if (memberIds.length > 0) {
-        const { data } = await supabase
-          .from('activity_logs')
-          .select('user_id, points_earned')
-          .in('user_id', memberIds)
-          .gte('logged_at', weekStart.toISOString())
-        weeklyLogs = data ?? []
-      }
-
-      const totals = new Map<string, number>()
-      for (const log of weeklyLogs) {
-        totals.set(log.user_id, (totals.get(log.user_id) ?? 0) + log.points_earned)
-      }
-
-      const ranking = (members ?? [])
-        .map((m: any) => {
-          const p = Array.isArray(m.profile) ? m.profile[0] : m.profile
-          return {
-            user_id: m.user_id,
-            username: p?.username ?? '?',
-            avatar_url: p?.avatar_url ?? null,
-            points: totals.get(m.user_id) ?? 0,
-            role: m.role,
-          }
-        })
-        .sort((a, b) => b.points - a.points)
-        .map((m, i) => ({ ...m, rank: i + 1 }))
-
-      return {
-        ...group,
-        role: membership.role,
-        members: members ?? [],
-        ranking,
-      }
-    })
+  const allMembersData = await Promise.all(
+    groups.map((group: { id: string }) =>
+      supabase.from('group_members').select('user_id, role, joined_at, group_id, profile:profiles(username, avatar_url)').eq('group_id', group.id)
+    )
   )
 
-  const validGroups = groupsWithRankings.filter(Boolean)
+  const allMemberIds = [...new Set(allMembersData.flatMap((r: { data: any[] | null }) => (r.data ?? []).map((m: any) => m.user_id)))]
+  const { data: allWeeklyLogs } = allMemberIds.length > 0
+    ? await supabase.from('activity_logs').select('user_id, points_earned').in('user_id', allMemberIds).gte('logged_at', weekStart.toISOString())
+    : { data: [] as { user_id: string; points_earned: number }[] }
+
+  const totalsMap = new Map<string, number>()
+  for (const log of allWeeklyLogs ?? []) {
+    totalsMap.set(log.user_id, (totalsMap.get(log.user_id) ?? 0) + log.points_earned)
+  }
+
+  const groupsWithRankings = groups.map((group: { id: string; [key: string]: any }, i: number) => {
+    const membership = membershipMap.get(group.id) as { role: string } | undefined
+    if (!membership) return null
+    const members = allMembersData[i].data ?? []
+    const ranking = members
+      .map((m: any) => {
+        const p = Array.isArray(m.profile) ? m.profile[0] : m.profile
+        return {
+          user_id: m.user_id,
+          username: p?.username ?? '?',
+          avatar_url: p?.avatar_url ?? null,
+          points: totalsMap.get(m.user_id) ?? 0,
+          role: m.role,
+        }
+      })
+      .sort((a: any, b: any) => b.points - a.points)
+      .map((m: any, idx: number) => ({ ...m, rank: idx + 1 }))
+    return { ...group, role: membership.role, members, ranking }
+  })
+
+  const validGroups = groupsWithRankings.filter(Boolean) as any[]
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
