@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, useCallback } from 'react'
 import { Check, X, ChevronLeft, ChevronRight, MessageSquare } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 import { submitVote } from '@/app/(app)/parametres/actions'
 
 interface Vote {
@@ -23,12 +23,71 @@ interface PendingVote {
   votes: Vote[]
 }
 
-export function VotePanelClient({ pendingVotes }: { pendingVotes: PendingVote[] }) {
+export function VotePanelClient({ userId }: { userId: string }) {
+  const [pendingVotes, setPendingVotes] = useState<PendingVote[]>([])
   const [index, setIndex] = useState(0)
   const [comment, setComment] = useState('')
   const [showComment, setShowComment] = useState(false)
   const [loading, setLoading] = useState(false)
-  const router = useRouter()
+  const supabase = createClient()
+
+  const fetchPendingVotes = useCallback(async () => {
+    const { data: memberships, error: memberErr } = await supabase
+      .from('group_members')
+      .select('group_id')
+      .eq('user_id', userId)
+
+    if (memberErr) { console.error('[VotePanel] group_members error:', memberErr); return }
+
+    const groupIds = (memberships ?? []).map((m: any) => m.group_id)
+    if (groupIds.length === 0) { console.log('[VotePanel] no groups found for user', userId); return }
+
+    const { data: requests, error: reqErr } = await supabase
+      .from('objective_vote_requests')
+      .select('id, target_count, period, multiplier, created_at, group_id, requester_id, activity_id')
+      .eq('status', 'pending')
+      .neq('requester_id', userId)
+      .in('group_id', groupIds)
+      .order('created_at', { ascending: true })
+
+    if (reqErr) { console.error('[VotePanel] objective_vote_requests error:', reqErr); return }
+    if (!requests || requests.length === 0) { setPendingVotes([]); return }
+
+    const requesterIds = [...new Set(requests.map(r => r.requester_id))]
+    const activityIds = [...new Set(requests.map(r => r.activity_id))]
+    const requestIds = requests.map(r => r.id)
+
+    const [profilesRes, activitiesRes, groupsRes, votesRes] = await Promise.all([
+      supabase.from('profiles').select('id, username, avatar_url').in('id', requesterIds),
+      supabase.from('activities').select('id, name, emoji').in('id', activityIds),
+      supabase.from('groups').select('id, name').in('id', groupIds),
+      supabase.from('objective_votes').select('request_id, vote, comment, voter_id').in('request_id', requestIds),
+    ])
+
+    const profileMap = new Map((profilesRes.data ?? []).map(p => [p.id, p]))
+    const activityMap = new Map((activitiesRes.data ?? []).map(a => [a.id, a]))
+    const groupMap = new Map((groupsRes.data ?? []).map(g => [g.id, g]))
+
+    const enriched = requests.map(r => ({
+      ...r,
+      requester: profileMap.get(r.requester_id) ?? null,
+      activity: activityMap.get(r.activity_id) ?? null,
+      group: groupMap.get(r.group_id) ?? null,
+      votes: (votesRes.data ?? []).filter(v => v.request_id === r.id),
+    }))
+
+    const filtered = enriched.filter(r =>
+      !r.votes.some((v: any) => v.voter_id === userId)
+    )
+    setPendingVotes(filtered as any)
+    setIndex(i => Math.min(i, Math.max(0, filtered.length - 1)))
+  }, [userId])
+
+  useEffect(() => {
+    fetchPendingVotes()
+    const interval = setInterval(fetchPendingVotes, 15000)
+    return () => clearInterval(interval)
+  }, [fetchPendingVotes])
 
   const current = pendingVotes[index]
   if (!current) return null
@@ -42,14 +101,12 @@ export function VotePanelClient({ pendingVotes }: { pendingVotes: PendingVote[] 
     setComment('')
     setShowComment(false)
     setLoading(false)
-    if (index > 0) setIndex(i => i - 1)
-    router.refresh()
+    await fetchPendingVotes()
   }
 
   return (
     <div className="hidden lg:block fixed bottom-6 right-6 z-40 w-80">
       <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl overflow-hidden">
-        {/* Header */}
         <div className="px-4 py-3 bg-violet-600/10 border-b border-violet-500/20 flex items-center justify-between">
           <span className="text-sm font-bold text-violet-400">🗳️ Vote en cours</span>
           {pendingVotes.length > 1 && (
@@ -73,16 +130,13 @@ export function VotePanelClient({ pendingVotes }: { pendingVotes: PendingVote[] 
           )}
         </div>
 
-        {/* Body */}
         <div className="p-4 space-y-3">
-          {/* Info */}
           <p className="text-xs text-gray-500">
             <span className="font-semibold text-white">{current.requester?.username ?? '?'}</span>
             {' '}veut un objectif dans{' '}
             <span className="font-semibold text-white">{current.group?.name ?? '?'}</span>
           </p>
 
-          {/* Activity card */}
           <div className="flex items-center gap-3 p-3 bg-gray-800 rounded-xl">
             <span className="text-2xl">{current.activity?.emoji ?? '⚡'}</span>
             <div>
@@ -93,7 +147,6 @@ export function VotePanelClient({ pendingVotes }: { pendingVotes: PendingVote[] 
             </div>
           </div>
 
-          {/* Existing votes */}
           {(acceptCount > 0 || rejectCount > 0) && (
             <div className="flex gap-4 text-xs">
               <span className="text-green-400 font-medium">✓ {acceptCount} pour</span>
@@ -101,7 +154,6 @@ export function VotePanelClient({ pendingVotes }: { pendingVotes: PendingVote[] 
             </div>
           )}
 
-          {/* Optional comment */}
           {showComment && (
             <textarea
               value={comment}
@@ -112,7 +164,6 @@ export function VotePanelClient({ pendingVotes }: { pendingVotes: PendingVote[] 
             />
           )}
 
-          {/* Actions */}
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowComment(v => !v)}

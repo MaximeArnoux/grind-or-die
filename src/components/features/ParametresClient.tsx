@@ -2,26 +2,27 @@
 
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Trash2, Camera, Users } from 'lucide-react'
+import { Plus, Trash2, Camera, Users, Clock } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { Badge } from '@/components/ui/Badge'
-import { createVoteRequest } from '@/app/(app)/parametres/actions'
+import { createVoteRequest, cancelVoteRequest } from '@/app/(app)/parametres/actions'
 import type { Profile, Activity } from '@/types'
 
 interface Props {
   profile: Profile | null
   objectives: any[]
+  pendingVoteRequests: any[]
   activities: Activity[]
   latestWeight: number | null
   userId: string
   userGroups: { id: string; name: string }[]
 }
 
-export function ParametresClient({ profile, objectives, activities, latestWeight, userId, userGroups }: Props) {
+export function ParametresClient({ profile, objectives, pendingVoteRequests, activities, latestWeight, userId, userGroups }: Props) {
   const router = useRouter()
   const supabase = createClient()
 
@@ -235,12 +236,48 @@ export function ParametresClient({ profile, objectives, activities, latestWeight
           </div>
         </CardHeader>
         <CardContent>
-          {objectives.length === 0 ? (
+          {objectives.length === 0 && pendingVoteRequests.length === 0 ? (
             <p className="text-gray-600 text-sm text-center py-6">
               Aucun objectif. Ajoute-en un pour gagner des points bonus !
             </p>
           ) : (
             <div className="space-y-3">
+              {pendingVoteRequests.map((req: any) => {
+                const activityInfo = activities.find(a => a.id === req.activity_id)
+                const groupInfo = userGroups.find(g => g.id === req.group_id)
+                const acceptCount = (req.votes ?? []).filter((v: any) => v.vote === 'accept').length
+                const rejectCount = (req.votes ?? []).filter((v: any) => v.vote === 'reject').length
+                return (
+                  <div key={req.id} className="flex items-center justify-between p-3 bg-gray-800/50 border border-yellow-500/20 rounded-xl">
+                    <div>
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <p className="text-sm font-medium text-white">
+                          {(activityInfo as any)?.emoji} {activityInfo?.name}
+                        </p>
+                        <span className="flex items-center gap-1 text-xs text-yellow-400 bg-yellow-500/10 px-2 py-0.5 rounded-full">
+                          <Clock size={10} /> En attente
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        {req.target_count}× / {req.period === 'daily' ? 'jour' : 'semaine'} · ×{req.multiplier} · {groupInfo?.name}
+                      </p>
+                      {(acceptCount > 0 || rejectCount > 0) && (
+                        <p className="text-xs mt-1">
+                          <span className="text-green-400">✓ {acceptCount} pour</span>
+                          <span className="text-gray-600 mx-1">·</span>
+                          <span className="text-red-400">✗ {rejectCount} contre</span>
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      onClick={async () => { await cancelVoteRequest(req.id); router.refresh() }}
+                      className="p-1.5 hover:bg-red-500/10 rounded-lg text-gray-500 hover:text-red-400 transition-colors"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                )
+              })}
               {objectives.map(obj => (
                 <div key={obj.id} className="flex items-center justify-between p-3 bg-gray-800 rounded-xl">
                   <div>
