@@ -356,6 +356,7 @@ insert into activity_categories (name, emoji, color, order_index) values
   ('Dev perso', '🧠', '#8b5cf6', 4),
   ('Looksmax', '💅', '#ec4899', 5),
   ('Entrepreneuriat', '💼', '#f97316', 6)
+  -- ('sante, emoji coeur, couleur rouge et blanc , 7)
 on conflict (name) do nothing;
 
 -- ============================================
@@ -459,7 +460,7 @@ create or replace function handle_new_user()
 returns trigger as $$
 begin
   insert into profiles (id, username)
-  values (new.id, coalesce(new.raw_user_meta_data->>'username', 'user_' || substr(new.id::text, 1, 8)))
+  values (new.id, lower(coalesce(new.raw_user_meta_data->>'username', 'user_' || substr(new.id::text, 1, 8))))
   on conflict (id) do nothing;
 
   insert into user_streaks (user_id)

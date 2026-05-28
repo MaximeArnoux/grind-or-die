@@ -64,7 +64,7 @@ export function Topbar({ profile, notificationCount = 0 }: TopbarProps) {
         {open && (
           <div className="absolute right-0 top-full mt-2 w-52 bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl overflow-hidden z-50">
             <Link
-              href={`/profil/${profile.username}`}
+              href={`/profil/${profile.username.toLowerCase()}`}
               onClick={() => setOpen(false)}
               className="flex items-center gap-3 px-4 py-3 text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
             >

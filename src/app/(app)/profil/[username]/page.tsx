@@ -16,7 +16,7 @@ export default async function ProfilPage({ params }: { params: Promise<{ usernam
   const { data: profile } = await supabase
     .from('profiles')
     .select('*')
-    .eq('username', username.toLowerCase())
+    .ilike('username', username)
     .single()
 
   if (!profile) notFound()
