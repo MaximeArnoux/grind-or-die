@@ -3,10 +3,11 @@ import Link from 'next/link'
 import { Trophy, TrendingUp, Star, Users, ArrowRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
-import { formatPoints, formatTimeAgo, capitalizeFirst, cn } from '@/lib/utils'
+import { formatPoints, formatTimeAgo, capitalizeFirst, cn, toParisDate } from '@/lib/utils'
 import { DashboardChart } from '@/components/features/DashboardChart'
 import { MandatoryChecklist } from '@/components/features/MandatoryChecklist'
-import { format, startOfWeek, endOfWeek, subDays } from 'date-fns'
+import { GroupChatClient } from '@/components/features/GroupChatClient'
+import { format, startOfWeek, subDays } from 'date-fns'
 import { fr } from 'date-fns/locale'
 
 type WeekLog = {
@@ -33,30 +34,19 @@ export default async function DashboardPage() {
   const nowParis = new Date(new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }))
   const weekStart = startOfWeek(nowParis, { weekStartsOn: 1 })
   const todayStart = new Date(nowParis); todayStart.setHours(0, 0, 0, 0)
+  const sevenDaysAgo = subDays(nowParis, 6); sevenDaysAgo.setHours(0, 0, 0, 0)
 
   // Parallel data fetching
-  const [profileRes, streakRes, totalPointsRes, weekPointsRes, todayPointsRes, recentLogsRes, myGroupMembershipsRes, weeklyChartRes] = await Promise.all([
-    supabase.from('profiles').select('*').eq('id', user.id).single(),
-    supabase.from('user_streaks').select('*').eq('user_id', user.id).single(),
+  const [profileRes, streakRes, totalPointsRes, weekPointsRes, todayPointsRes, recentLogsRes, myGroupMembershipsRes, chartLogsRes] = await Promise.all([
+    supabase.from('profiles').select('username, avatar_url').eq('id', user.id).single(),
+    supabase.from('user_streaks').select('current_streak').eq('user_id', user.id).single(),
     supabase.from('activity_logs').select('points_earned').eq('user_id', user.id),
     supabase.from('activity_logs').select('points_earned, activity:activities(type)').eq('user_id', user.id).gte('logged_at', weekStart.toISOString()),
     supabase.from('activity_logs').select('points_earned').eq('user_id', user.id).gte('logged_at', todayStart.toISOString()),
-    supabase.from('activity_logs').select('*, activity:activities(name, emoji, points, type)').eq('user_id', user.id).order('logged_at', { ascending: false }).limit(5),
+    supabase.from('activity_logs').select('id, points_earned, logged_at, activity:activities(name, emoji)').eq('user_id', user.id).order('logged_at', { ascending: false }).limit(5),
     supabase.from('group_members').select('group_id, role, group:groups(id, name)').eq('user_id', user.id),
-    // Last 7 days chart data
-    Promise.all(
-      Array.from({ length: 7 }, (_, i) => {
-        const day = subDays(new Date(), 6 - i)
-        const dayStart = new Date(day.setHours(0, 0, 0, 0))
-        const dayEnd = new Date(day.setHours(23, 59, 59, 999))
-        return supabase
-          .from('activity_logs')
-          .select('points_earned')
-          .eq('user_id', user.id)
-          .gte('logged_at', dayStart.toISOString())
-          .lte('logged_at', dayEnd.toISOString())
-      })
-    ),
+    // Single query for last 7 days chart data
+    supabase.from('activity_logs').select('points_earned, logged_at').eq('user_id', user.id).gte('logged_at', sevenDaysAgo.toISOString()),
   ])
 
   const profile = profileRes.data
@@ -78,42 +68,63 @@ export default async function DashboardPage() {
 
   type GroupRankEntry = { user_id: string; username: string; avatar_url: string | null; points: number; rank: number }
   let myGroupRanking: GroupRankEntry[] = []
+  let initialMessages: any[] = []
 
   if (primaryGroupId) {
-    const { data: groupMembers } = await supabase
-      .from('group_members')
-      .select('user_id, profile:profiles(username, avatar_url)')
-      .eq('group_id', primaryGroupId)
+    // Run group_members + group_messages in parallel
+    const [groupMembersRes, msgsRes] = await Promise.all([
+      supabase.from('group_members').select('user_id, profile:profiles(username, avatar_url)').eq('group_id', primaryGroupId),
+      supabase.from('group_messages').select('id, user_id, content, created_at').eq('group_id', primaryGroupId).order('created_at', { ascending: true }),
+    ])
 
-    const memberIds = (groupMembers ?? []).map((m: any) => m.user_id)
+    const groupMembers = groupMembersRes.data ?? []
+    const msgs = msgsRes.data ?? []
+    const memberIds = groupMembers.map((m: any) => m.user_id)
+    const uniqueUserIds = [...new Set(msgs.map((m: any) => m.user_id))]
+
+    // Run member_logs + msg_profiles in parallel
+    const [logsRes, msgProfilesRes] = await Promise.all([
+      memberIds.length > 0
+        ? supabase.from('activity_logs').select('user_id, points_earned').in('user_id', memberIds).gte('logged_at', weekStart.toISOString())
+        : Promise.resolve({ data: [] as { user_id: string; points_earned: number }[] }),
+      uniqueUserIds.length > 0
+        ? supabase.from('profiles').select('id, username, avatar_url').in('id', uniqueUserIds)
+        : Promise.resolve({ data: [] as { id: string; username: string; avatar_url: string | null }[] }),
+    ])
+
+    // Build ranking
     if (memberIds.length > 0) {
-      const { data: groupWeeklyLogs } = await supabase
-        .from('activity_logs')
-        .select('user_id, points_earned')
-        .in('user_id', memberIds)
-        .gte('logged_at', weekStart.toISOString())
-
       const totals = new Map<string, number>()
-      for (const log of (groupWeeklyLogs ?? [])) {
+      for (const log of logsRes.data ?? []) {
         totals.set(log.user_id, (totals.get(log.user_id) ?? 0) + log.points_earned)
       }
-
-      myGroupRanking = (groupMembers ?? [])
+      myGroupRanking = groupMembers
         .map((m: any) => {
           const p = Array.isArray(m.profile) ? m.profile[0] : m.profile
           return { user_id: m.user_id, username: p?.username ?? '?', avatar_url: p?.avatar_url ?? null, points: totals.get(m.user_id) ?? 0 }
         })
-        .sort((a, b) => b.points - a.points)
-        .map((m, i) => ({ ...m, rank: i + 1 }))
+        .sort((a: GroupRankEntry, b: GroupRankEntry) => b.points - a.points)
+        .map((m: GroupRankEntry, i: number) => ({ ...m, rank: i + 1 }))
+    }
+
+    // Build chat messages
+    if (msgs.length > 0) {
+      const profileMap = new Map((msgProfilesRes.data ?? []).map((p: any) => [p.id, { username: p.username, avatar_url: p.avatar_url }]))
+      initialMessages = msgs.map((m: any) => ({ ...m, profile: profileMap.get(m.user_id) ?? null }))
     }
   }
+
   const myRank = myGroupRanking.findIndex(m => m.user_id === user.id) + 1
 
-  // Weekly chart
-  const chartData = weeklyChartRes.map((res, i) => {
-    const day = subDays(new Date(), 6 - i)
-    const pts = (res.data ?? []).reduce((sum: number, l: { points_earned: number }) => sum + l.points_earned, 0)
-    return { day: format(day, 'EEE', { locale: fr }), points: pts }
+  // Weekly chart — group single query results by Paris day
+  const dayMap = new Map<string, number>()
+  for (const log of chartLogsRes.data ?? []) {
+    const key = format(toParisDate(log.logged_at), 'yyyy-MM-dd')
+    dayMap.set(key, (dayMap.get(key) ?? 0) + log.points_earned)
+  }
+  const chartData = Array.from({ length: 7 }, (_, i) => {
+    const day = subDays(nowParis, 6 - i)
+    return { day: format(day, 'EEE', { locale: fr }), points: dayMap.get(format(day, 'yyyy-MM-dd')) ?? 0 }
   })
 
   // Points breakdown
@@ -197,7 +208,7 @@ export default async function DashboardPage() {
               </div>
             ) : (
               <div className="space-y-1.5">
-                {myGroupRanking.slice(0, 5).map(member => (
+                {myGroupRanking.map(member => (
                   <div
                     key={member.user_id}
                     className={cn(
@@ -229,16 +240,17 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Points breakdown */}
-        <Card>
+        {/* Points breakdown + Chat */}
+        <Card className="flex flex-col">
+          {/* Répartition — partie haute */}
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>Répartition des points</CardTitle>
               <span className="text-2xl font-black text-white">{weekPoints}</span>
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-4 mb-4">
+          <CardContent className="pb-4">
+            <div className="flex items-center gap-4">
               <div className="w-24 h-24 relative flex items-center justify-center">
                 <svg viewBox="0 0 36 36" className="w-24 h-24 -rotate-90">
                   <circle cx="18" cy="18" r="15.9" fill="none" stroke="#1f2937" strokeWidth="3" />
@@ -270,6 +282,26 @@ export default async function DashboardPage() {
               </div>
             </div>
           </CardContent>
+
+          {/* Chat — partie basse, hauteur fixe */}
+          <div className="border-t border-gray-800 flex flex-col h-[320px]">
+            <div className="px-5 py-3 flex-shrink-0">
+              <p className="text-sm font-semibold text-white">
+                💬 Chat {primaryGroupName ? `— ${primaryGroupName}` : 'du groupe'}
+              </p>
+            </div>
+            {primaryGroupId ? (
+              <GroupChatClient
+                groupId={primaryGroupId}
+                userId={user.id}
+                initialMessages={initialMessages}
+              />
+            ) : (
+              <p className="text-center text-gray-600 text-sm py-8 px-4">
+                Rejoins un groupe pour accéder au chat
+              </p>
+            )}
+          </div>
         </Card>
       </div>
 

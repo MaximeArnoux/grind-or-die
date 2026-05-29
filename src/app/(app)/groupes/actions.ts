@@ -3,14 +3,20 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 
-export async function createGroup(name: string, description: string | null) {
+export async function createGroup(name: string, description: string | null, isPublic: boolean, password?: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Non authentifié' }
 
   const { data: group, error: groupError } = await supabase
     .from('groups')
-    .insert({ name: name.trim(), description: description?.trim() || null, created_by: user.id })
+    .insert({
+      name: name.trim(),
+      description: description?.trim() || null,
+      created_by: user.id,
+      is_public: isPublic,
+      password: isPublic ? null : (password?.trim() || null),
+    })
     .select('id')
     .single()
 
@@ -27,31 +33,60 @@ export async function createGroup(name: string, description: string | null) {
   return { success: true }
 }
 
-export async function joinGroup(inviteCode: string) {
+export async function updateGroup(groupId: string, name: string, isPublic: boolean, newPassword?: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Non authentifié' }
 
-  const { data: group } = await supabase
-    .from('groups')
-    .select('id, max_members')
-    .eq('invite_code', inviteCode.trim().toUpperCase())
+  const { data: membership } = await supabase
+    .from('group_members')
+    .select('role')
+    .eq('group_id', groupId)
+    .eq('user_id', user.id)
     .single()
 
-  if (!group) return { error: 'Code invalide' }
+  if (membership?.role !== 'admin') return { error: "Tu n'es pas admin de ce groupe" }
 
-  const { count } = await supabase
-    .from('group_members')
-    .select('*', { count: 'exact', head: true })
-    .eq('group_id', group.id)
+  const updateData: Record<string, unknown> = { name: name.trim(), is_public: isPublic }
+  if (isPublic) {
+    updateData.password = null
+  } else if (newPassword?.trim()) {
+    updateData.password = newPassword.trim()
+  }
 
-  if ((count ?? 0) >= group.max_members) return { error: 'Groupe complet (10 membres max)' }
+  const { error } = await supabase.from('groups').update(updateData).eq('id', groupId)
+  if (error) return { error: `Impossible de modifier: ${error.message}` }
 
-  const { error } = await supabase
-    .from('group_members')
-    .insert({ group_id: group.id, user_id: user.id, role: 'member' })
+  revalidatePath('/groupes')
+  return { success: true }
+}
 
-  if (error) return { error: 'Tu es déjà dans ce groupe' }
+export async function joinPublicGroup(groupId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Non authentifié' }
+
+  const { data, error } = await supabase.rpc('join_public_group', { group_id_input: groupId })
+  if (error) return { error: `Impossible de rejoindre: ${error.message}` }
+  if (data?.error) return { error: data.error }
+
+  revalidatePath('/groupes')
+  revalidatePath('/dashboard')
+  return { success: true }
+}
+
+export async function joinGroup(inviteCode: string, password?: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Non authentifié' }
+
+  const { data, error } = await supabase.rpc('join_group_by_code', {
+    invite_code_input: inviteCode.trim().toUpperCase(),
+    password_input: password ?? null,
+  })
+
+  if (error) return { error: `Impossible de rejoindre: ${error.message}` }
+  if (data?.error) return { error: data.error }
 
   revalidatePath('/groupes')
   revalidatePath('/dashboard')
@@ -109,6 +144,33 @@ export async function inviteByUsername(groupId: string, username: string) {
   if (error) return { error: `Impossible d'inviter: ${error.message}` }
 
   revalidatePath('/groupes')
+  return { success: true }
+}
+
+export async function removeMember(groupId: string, targetUserId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Non authentifié' }
+  if (user.id === targetUserId) return { error: 'Tu ne peux pas te retirer toi-même' }
+
+  const { data: group } = await supabase
+    .from('groups')
+    .select('created_by')
+    .eq('id', groupId)
+    .single()
+
+  if (group?.created_by !== user.id) return { error: "Seul le créateur du groupe peut retirer des membres" }
+
+  const { error } = await supabase
+    .from('group_members')
+    .delete()
+    .eq('group_id', groupId)
+    .eq('user_id', targetUserId)
+
+  if (error) return { error: `Impossible de retirer le membre: ${error.message}` }
+
+  revalidatePath('/groupes')
+  revalidatePath('/dashboard')
   return { success: true }
 }
 

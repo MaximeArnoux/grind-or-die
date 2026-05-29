@@ -20,6 +20,7 @@ export async function GET(request: Request) {
 
       if (!existingProfile) {
         const finalUsername = username
+          ?? (user.user_metadata?.username as string | undefined)?.toLowerCase()
           ?? user.email?.split('@')[0]?.replace(/[^a-zA-Z0-9_]/g, '').slice(0, 15)
           ?? 'user'
         const usernameWithSuffix = `${finalUsername}${Math.floor(Math.random() * 9999)}`

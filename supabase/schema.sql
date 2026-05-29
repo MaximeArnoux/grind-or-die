@@ -155,6 +155,16 @@ create table if not exists notifications (
   created_at timestamptz default now()
 );
 
+-- ============================================
+-- GROUP ACTIVITY LOGS (link activity_log ↔ group)
+-- ============================================
+create table if not exists group_activity_logs (
+  id uuid default uuid_generate_v4() primary key,
+  group_id uuid references groups(id) on delete cascade not null,
+  activity_log_id uuid references activity_logs(id) on delete cascade not null,
+  unique(group_id, activity_log_id)
+);
+
 -- Remove duplicate activities created by re-running older seeds, then prevent new ones.
 with ranked_activities as (
   select
@@ -235,6 +245,7 @@ alter table user_objectives enable row level security;
 alter table weight_logs enable row level security;
 alter table user_streaks enable row level security;
 alter table notifications enable row level security;
+alter table group_activity_logs enable row level security;
 
 -- Drop existing policies before recreating
 drop policy if exists "Public profiles visible" on profiles;
@@ -319,6 +330,21 @@ create policy "Own streak write" on user_streaks for all using (auth.uid() = use
 -- Notifications: own
 create policy "Own notifications" on notifications for all using (auth.uid() = user_id);
 
+-- Group activity logs: members can read, users can insert/delete their own
+drop policy if exists "Group members view group logs" on group_activity_logs;
+drop policy if exists "Users add own logs to groups" on group_activity_logs;
+drop policy if exists "Users delete own group logs" on group_activity_logs;
+create policy "Group members view group logs" on group_activity_logs for select using (
+  exists (select 1 from group_members where group_id = group_activity_logs.group_id and user_id = auth.uid())
+);
+create policy "Users add own logs to groups" on group_activity_logs for insert with check (
+  exists (select 1 from group_members where group_id = group_activity_logs.group_id and user_id = auth.uid())
+  and exists (select 1 from activity_logs where id = group_activity_logs.activity_log_id and user_id = auth.uid())
+);
+create policy "Users delete own group logs" on group_activity_logs for delete using (
+  exists (select 1 from activity_logs where id = group_activity_logs.activity_log_id and user_id = auth.uid())
+);
+
 -- ============================================
 -- SEED DATA — Categories
 -- ============================================
@@ -330,6 +356,7 @@ insert into activity_categories (name, emoji, color, order_index) values
   ('Dev perso', '🧠', '#8b5cf6', 4),
   ('Looksmax', '💅', '#ec4899', 5),
   ('Entrepreneuriat', '💼', '#f97316', 6)
+  -- ('sante, emoji coeur, couleur rouge et blanc , 7)
 on conflict (name) do nothing;
 
 -- ============================================
@@ -360,8 +387,7 @@ begin
     ('2km de vélo', '🚴', 1, 'positive', fitness_id, true, 20),
     ('10K steps', '🚶', 2, 'positive', fitness_id, false, 1),
     ('Natation 30min', '🏊', 4, 'positive', fitness_id, false, 1),
-    ('HIIT 20min', '💪', 3, 'positive', fitness_id, false, 1),
-    ('50 pompes', '💪', 2, 'positive', fitness_id, true, 3),
+('50 pompes', '💪', 2, 'positive', fitness_id, true, 3),
     ('Stretching 15min', '🧘', 1, 'positive', fitness_id, false, 1),
     ('Sport collectif', '⚽', 3, 'positive', fitness_id, false, 1),
     ('10km course', '🏅', 5, 'positive', fitness_id, false, 1)
@@ -372,20 +398,15 @@ begin
     ('3L d''eau', '💧', 2, 'positive', nutrition_id, false, 1),
     ('Repas sain', '🥗', 7, 'positive', nutrition_id, true, 3),
     ('Jeûne intermittent', '⏰', 3, 'positive', nutrition_id, false, 1),
-    ('Zéro sucre ajouté', '🚫', 3, 'positive', nutrition_id, false, 1),
-    ('Zéro alcool', '🚱', 2, 'positive', nutrition_id, false, 1),
     ('Deliveroo', '🛵', -5, 'negative', nutrition_id, false, 1),
-    ('Cheat meal', '🍔', -5, 'negative', nutrition_id, false, 1),
-    ('Fast food', '🍟', -7, 'negative', nutrition_id, false, 1),
-    ('Soirée pizza', '🍕', -4, 'negative', nutrition_id, false, 1)
+    ('Cheat meal', '🍔', -5, 'negative', nutrition_id, false, 1)
   on conflict do nothing;
 
   -- SOMMEIL
   insert into activities (name, emoji, points, type, category_id, can_repeat_daily, max_per_day) values
-    ('7h+ de sommeil', '😴', 3, 'positive', sommeil_id, false, 1),
-    ('Réveil avant 9h', '⏰', 2, 'positive', sommeil_id, false, 1),
+('Réveil avant 9h', '⏰', 2, 'positive', sommeil_id, false, 1),
     ('Coucher avant 01h', '🌙', 5, 'positive', sommeil_id, false, 1),
-    ('Sieste 20min', '💤', 1, 'positive', sommeil_id, false, 1),
+
     ('Moins de 6h sommeil', '😵', -3, 'negative', sommeil_id, false, 1),
     ('+10h sommeil', '🛌', -3, 'negative', sommeil_id, false, 1),
     ('Couché après 01h', '🌃', -2, 'negative', sommeil_id, false, 1),
@@ -397,10 +418,8 @@ begin
     ('Réviser 2h', '📚', 4, 'positive', etudes_id, true, 4),
     ('Cours en ligne', '💻', 3, 'positive', etudes_id, true, 3),
     ('15min lecture', '📖', 2, 'positive', etudes_id, false, 1),
-    ('Lire 1h', '📕', 3, 'positive', etudes_id, false, 1),
     ('Flashcards', '📝', 1, 'positive', etudes_id, true, 3),
-    ('Finir un module', '🎓', 4, 'positive', etudes_id, true, 2),
-    ('Prendre des notes de cours', '✏️', 2, 'positive', etudes_id, true, 4)
+    ('Finir un module', '🎓', 4, 'positive', etudes_id, true, 2)
   on conflict do nothing;
 
   -- DEV PERSO
@@ -409,22 +428,15 @@ begin
     ('Journal', '📓', 2, 'positive', devperso_id, false, 1),
     ('Douche froide', '🚿', 3, 'positive', devperso_id, false, 1),
     ('Podcast éducatif', '🎧', 1, 'positive', devperso_id, true, 2),
-    ('Visualisation', '🎯', 1, 'positive', devperso_id, false, 1),
     ('Pas de réseaux sociaux', '📵', 3, 'positive', devperso_id, false, 1),
-    ('Temps écran 3h+', '📺', -3, 'negative', devperso_id, false, 1),
-    ('Temps écran 5h+', '📺', -5, 'negative', devperso_id, false, 1),
-    ('Temps écran 7h+', '📺', -7, 'negative', devperso_id, false, 1),
     ('Réseaux sociaux 2h+', '📱', -3, 'negative', devperso_id, false, 1)
   on conflict do nothing;
 
   -- LOOKSMAX
   insert into activities (name, emoji, points, type, category_id, can_repeat_daily, max_per_day) values
     ('Skincare routine', '🧴', 2, 'positive', looksmax_id, false, 1),
-    ('Coiffure soignée', '💇', 1, 'positive', looksmax_id, false, 1),
-    ('Tenue stylée', '👔', 1, 'positive', looksmax_id, false, 1),
     ('Hygiène complète', '🦷', 2, 'positive', looksmax_id, false, 1),
-    ('Compléments alimentaires', '💊', 1, 'positive', looksmax_id, false, 1),
-    ('Rasage/entretien', '🪒', 1, 'positive', looksmax_id, false, 1)
+    ('Compléments alimentaires', '💊', 1, 'positive', looksmax_id, false, 1)
   on conflict do nothing;
 
   -- ENTREPRENEURIAT
@@ -448,7 +460,7 @@ create or replace function handle_new_user()
 returns trigger as $$
 begin
   insert into profiles (id, username)
-  values (new.id, coalesce(new.raw_user_meta_data->>'username', 'user_' || substr(new.id::text, 1, 8)))
+  values (new.id, lower(coalesce(new.raw_user_meta_data->>'username', 'user_' || substr(new.id::text, 1, 8))))
   on conflict (id) do nothing;
 
   insert into user_streaks (user_id)
@@ -462,6 +474,119 @@ $$ language plpgsql security definer;
 create or replace trigger on_auth_user_created
   after insert on auth.users
   for each row execute function handle_new_user();
+
+-- ============================================
+-- FUNCTION: Join group by invite code (bypasses RLS for non-members)
+-- ============================================
+create or replace function join_group_by_code(invite_code_input text)
+returns json
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_group_id     uuid;
+  v_max_members  integer;
+  v_member_count integer;
+  v_user_id      uuid := auth.uid();
+begin
+  if v_user_id is null then
+    return json_build_object('error', 'Non authentifié');
+  end if;
+
+  select id, max_members into v_group_id, v_max_members
+  from groups
+  where invite_code = upper(trim(invite_code_input));
+
+  if v_group_id is null then
+    return json_build_object('error', 'Code invalide');
+  end if;
+
+  select count(*) into v_member_count
+  from group_members where group_id = v_group_id;
+
+  if v_member_count >= v_max_members then
+    return json_build_object('error', 'Groupe complet (10 membres max)');
+  end if;
+
+  if exists (
+    select 1 from group_members
+    where group_id = v_group_id and user_id = v_user_id
+  ) then
+    return json_build_object('error', 'Tu es déjà dans ce groupe');
+  end if;
+
+  insert into group_members (group_id, user_id, role)
+  values (v_group_id, v_user_id, 'member');
+
+  return json_build_object('success', true);
+end;
+$$;
+
+-- ============================================
+-- OBJECTIVE VOTE REQUESTS
+-- ============================================
+create table if not exists objective_vote_requests (
+  id uuid default gen_random_uuid() primary key,
+  requester_id uuid references profiles(id) on delete cascade not null,
+  group_id uuid references groups(id) on delete cascade not null,
+  activity_id uuid references activities(id) on delete cascade not null,
+  target_count integer not null default 1,
+  period text check (period in ('daily', 'weekly')) default 'weekly',
+  multiplier decimal(3,2) default 1.5,
+  status text check (status in ('pending', 'accepted', 'rejected')) default 'pending',
+  created_at timestamptz default now()
+);
+
+create table if not exists objective_votes (
+  id uuid default gen_random_uuid() primary key,
+  request_id uuid references objective_vote_requests(id) on delete cascade not null,
+  voter_id uuid references profiles(id) on delete cascade not null,
+  vote text check (vote in ('accept', 'reject')) not null,
+  comment text,
+  created_at timestamptz default now(),
+  unique(request_id, voter_id)
+);
+
+alter table objective_vote_requests enable row level security;
+alter table objective_votes enable row level security;
+
+create policy "Membres du groupe peuvent voir les demandes"
+  on objective_vote_requests for select
+  using (exists (
+    select 1 from group_members
+    where group_id = objective_vote_requests.group_id and user_id = auth.uid()
+  ));
+
+create policy "Membres peuvent créer des demandes"
+  on objective_vote_requests for insert
+  with check (requester_id = auth.uid() and exists (
+    select 1 from group_members
+    where group_id = objective_vote_requests.group_id and user_id = auth.uid()
+  ));
+
+create policy "Membres peuvent mettre à jour le statut"
+  on objective_vote_requests for update
+  using (exists (
+    select 1 from group_members
+    where group_id = objective_vote_requests.group_id and user_id = auth.uid()
+  ));
+
+create policy "Membres peuvent voir les votes"
+  on objective_votes for select
+  using (exists (
+    select 1 from objective_vote_requests ovr
+    join group_members gm on gm.group_id = ovr.group_id
+    where ovr.id = objective_votes.request_id and gm.user_id = auth.uid()
+  ));
+
+create policy "Membres peuvent voter"
+  on objective_votes for insert
+  with check (voter_id = auth.uid() and exists (
+    select 1 from objective_vote_requests ovr
+    join group_members gm on gm.group_id = ovr.group_id
+    where ovr.id = objective_votes.request_id and gm.user_id = auth.uid()
+  ));
 
 -- ============================================
 -- INDEXES for performance
