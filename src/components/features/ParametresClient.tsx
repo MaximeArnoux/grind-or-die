@@ -45,7 +45,7 @@ export function ParametresClient({ profile, objectives, pendingVoteRequests, act
   const [showObjective, setShowObjective] = useState(false)
   const [objActivity, setObjActivity] = useState('')
   const [objCount, setObjCount] = useState('1')
-  const [objPeriod, setObjPeriod] = useState<'daily' | 'weekly'>('weekly')
+  const [objPeriod, setObjPeriod] = useState<'daily' | 'weekly' | 'monthly'>('weekly')
   const [objMultiplier, setObjMultiplier] = useState('1.5')
   const [objGroupId, setObjGroupId] = useState(userGroups.length === 1 ? userGroups[0].id : '')
   const [objLoading, setObjLoading] = useState(false)
@@ -285,7 +285,7 @@ export function ParametresClient({ profile, objectives, pendingVoteRequests, act
                       {(obj.activity as any)?.emoji} {(obj.activity as any)?.name}
                     </p>
                     <p className="text-xs text-gray-500">
-                      {obj.target_count}× / {obj.period === 'daily' ? 'jour' : 'semaine'} · Multiplicateur ×{obj.multiplier}
+                      {obj.target_count}× / {obj.period === 'daily' ? 'jour' : obj.period === 'monthly' ? 'mois' : 'semaine'} · Multiplicateur ×{obj.multiplier}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -360,11 +360,12 @@ export function ParametresClient({ profile, objectives, pendingVoteRequests, act
               <label className="text-sm font-medium text-gray-300">Par</label>
               <select
                 value={objPeriod}
-                onChange={e => setObjPeriod(e.target.value as 'daily' | 'weekly')}
+                onChange={e => setObjPeriod(e.target.value as 'daily' | 'weekly' | 'monthly')}
                 className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-sm text-gray-100 focus:outline-none focus:border-violet-500"
               >
                 <option value="daily">Jour</option>
                 <option value="weekly">Semaine</option>
+                <option value="monthly">Mois</option>
               </select>
             </div>
           </div>

@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Check, X, ChevronLeft, ChevronRight, MessageSquare } from 'lucide-react'
+import { Check, X, ChevronLeft, ChevronRight, MessageSquare, Gavel } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { submitVote } from '@/app/(app)/parametres/actions'
+import { submitVote, forceVote } from '@/app/(app)/parametres/actions'
 
 interface Vote {
   vote: string
@@ -14,13 +14,19 @@ interface Vote {
 interface PendingVote {
   id: string
   target_count: number
-  period: 'daily' | 'weekly'
+  period: 'daily' | 'weekly' | 'monthly'
   multiplier: number
   created_at: string
   requester: { username: string; avatar_url: string | null } | null
   group: { name: string } | null
   activity: { name: string; emoji: string | null } | null
   votes: Vote[]
+  canForce: boolean       // user est créateur du groupe + 48h écoulées + déjà voté
+  forceMode: boolean      // afficher l'UI de force
+}
+
+function periodLabel(p: string) {
+  return p === 'daily' ? 'jour' : p === 'monthly' ? 'mois' : 'semaine'
 }
 
 export function VotePanelClient({ userId }: { userId: string }) {
@@ -40,7 +46,7 @@ export function VotePanelClient({ userId }: { userId: string }) {
     if (memberErr) { console.error('[VotePanel] group_members error:', memberErr); return }
 
     const groupIds = (memberships ?? []).map((m: any) => m.group_id)
-    if (groupIds.length === 0) { console.log('[VotePanel] no groups found for user', userId); return }
+    if (groupIds.length === 0) { setPendingVotes([]); return }
 
     const { data: requests, error: reqErr } = await supabase
       .from('objective_vote_requests')
@@ -50,7 +56,7 @@ export function VotePanelClient({ userId }: { userId: string }) {
       .in('group_id', groupIds)
       .order('created_at', { ascending: true })
 
-    if (reqErr) { console.error('[VotePanel] objective_vote_requests error:', reqErr); return }
+    if (reqErr) { console.error('[VotePanel] requests error:', reqErr); return }
     if (!requests || requests.length === 0) { setPendingVotes([]); return }
 
     const requesterIds = [...new Set(requests.map(r => r.requester_id))]
@@ -60,7 +66,7 @@ export function VotePanelClient({ userId }: { userId: string }) {
     const [profilesRes, activitiesRes, groupsRes, votesRes] = await Promise.all([
       supabase.from('profiles').select('id, username, avatar_url').in('id', requesterIds),
       supabase.from('activities').select('id, name, emoji').in('id', activityIds),
-      supabase.from('groups').select('id, name').in('id', groupIds),
+      supabase.from('groups').select('id, name, created_by').in('id', groupIds),
       supabase.from('objective_votes').select('request_id, vote, comment, voter_id').in('request_id', requestIds),
     ])
 
@@ -68,17 +74,29 @@ export function VotePanelClient({ userId }: { userId: string }) {
     const activityMap = new Map((activitiesRes.data ?? []).map(a => [a.id, a]))
     const groupMap = new Map((groupsRes.data ?? []).map(g => [g.id, g]))
 
-    const enriched = requests.map(r => ({
-      ...r,
-      requester: profileMap.get(r.requester_id) ?? null,
-      activity: activityMap.get(r.activity_id) ?? null,
-      group: groupMap.get(r.group_id) ?? null,
-      votes: (votesRes.data ?? []).filter(v => v.request_id === r.id),
-    }))
+    const now = Date.now()
 
-    const filtered = enriched.filter(r =>
-      !r.votes.some((v: any) => v.voter_id === userId)
-    )
+    const enriched = requests.map(r => {
+      const votes = (votesRes.data ?? []).filter(v => v.request_id === r.id)
+      const hasVoted = votes.some((v: any) => v.voter_id === userId)
+      const group = groupMap.get(r.group_id) as any
+      const isCreator = group?.created_by === userId
+      const hoursElapsed = (now - new Date(r.created_at).getTime()) / (1000 * 60 * 60)
+      const canForce = isCreator && hasVoted && hoursElapsed >= 48
+      return {
+        ...r,
+        requester: profileMap.get(r.requester_id) ?? null,
+        activity: activityMap.get(r.activity_id) ?? null,
+        group: group ?? null,
+        votes,
+        canForce,
+        forceMode: canForce,
+        hasVoted,
+      }
+    })
+
+    // Garder : pas encore voté (vote normal) OU peut forcer (créateur après 48h)
+    const filtered = enriched.filter((r: any) => !r.hasVoted || r.canForce)
     setPendingVotes(filtered as any)
     setIndex(i => Math.min(i, Math.max(0, filtered.length - 1)))
   }, [userId])
@@ -104,11 +122,20 @@ export function VotePanelClient({ userId }: { userId: string }) {
     await fetchPendingVotes()
   }
 
+  async function handleForce(decision: 'accept' | 'reject') {
+    setLoading(true)
+    await forceVote(current.id, decision)
+    setLoading(false)
+    await fetchPendingVotes()
+  }
+
   return (
     <div className="hidden lg:block fixed bottom-6 right-6 z-40 w-80">
       <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl overflow-hidden">
-        <div className="px-4 py-3 bg-violet-600/10 border-b border-violet-500/20 flex items-center justify-between">
-          <span className="text-sm font-bold text-violet-400">🗳️ Vote en cours</span>
+        <div className={`px-4 py-3 border-b flex items-center justify-between ${current.forceMode ? 'bg-amber-600/10 border-amber-500/20' : 'bg-violet-600/10 border-violet-500/20'}`}>
+          <span className={`text-sm font-bold ${current.forceMode ? 'text-amber-400' : 'text-violet-400'}`}>
+            {current.forceMode ? '⚖️ Décision finale' : '🗳️ Vote en cours'}
+          </span>
           {pendingVotes.length > 1 && (
             <div className="flex items-center gap-1">
               <button
@@ -142,7 +169,7 @@ export function VotePanelClient({ userId }: { userId: string }) {
             <div>
               <p className="text-sm font-bold text-white">{current.activity?.name ?? '?'}</p>
               <p className="text-xs text-gray-500">
-                {current.target_count}× / {current.period === 'daily' ? 'jour' : 'semaine'} · ×{current.multiplier}
+                {current.target_count}× / {periodLabel(current.period)} · ×{current.multiplier}
               </p>
             </div>
           </div>
@@ -154,39 +181,65 @@ export function VotePanelClient({ userId }: { userId: string }) {
             </div>
           )}
 
-          {showComment && (
-            <textarea
-              value={comment}
-              onChange={e => setComment(e.target.value)}
-              placeholder="Ajouter un commentaire (optionnel)..."
-              rows={2}
-              className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-xl text-xs text-gray-100 placeholder-gray-600 focus:outline-none focus:border-violet-500 resize-none"
-            />
-          )}
+          {current.forceMode ? (
+            <>
+              <p className="text-xs text-amber-400/80 bg-amber-500/5 border border-amber-500/15 rounded-lg px-3 py-2">
+                48h écoulées. En tant que créateur du groupe, tu peux trancher.
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleForce('reject')}
+                  disabled={loading}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 text-sm font-semibold transition-colors disabled:opacity-50"
+                >
+                  <Gavel size={14} /> Forcer refus
+                </button>
+                <button
+                  onClick={() => handleForce('accept')}
+                  disabled={loading}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-green-500/10 hover:bg-green-500/20 text-green-400 text-sm font-semibold transition-colors disabled:opacity-50"
+                >
+                  <Gavel size={14} /> Forcer accept
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              {showComment && (
+                <textarea
+                  value={comment}
+                  onChange={e => setComment(e.target.value)}
+                  placeholder="Ajouter un commentaire (optionnel)..."
+                  rows={2}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-xl text-xs text-gray-100 placeholder-gray-600 focus:outline-none focus:border-violet-500 resize-none"
+                />
+              )}
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowComment(v => !v)}
-              title="Ajouter un commentaire"
-              className={`p-2 rounded-xl transition-colors ${showComment ? 'bg-gray-700 text-white' : 'hover:bg-gray-800 text-gray-500 hover:text-gray-300'}`}
-            >
-              <MessageSquare size={15} />
-            </button>
-            <button
-              onClick={() => handleVote('reject')}
-              disabled={loading}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 text-sm font-semibold transition-colors disabled:opacity-50"
-            >
-              <X size={15} /> Refuser
-            </button>
-            <button
-              onClick={() => handleVote('accept')}
-              disabled={loading}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-green-500/10 hover:bg-green-500/20 text-green-400 text-sm font-semibold transition-colors disabled:opacity-50"
-            >
-              <Check size={15} /> Accepter
-            </button>
-          </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowComment(v => !v)}
+                  title="Ajouter un commentaire"
+                  className={`p-2 rounded-xl transition-colors ${showComment ? 'bg-gray-700 text-white' : 'hover:bg-gray-800 text-gray-500 hover:text-gray-300'}`}
+                >
+                  <MessageSquare size={15} />
+                </button>
+                <button
+                  onClick={() => handleVote('reject')}
+                  disabled={loading}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 text-sm font-semibold transition-colors disabled:opacity-50"
+                >
+                  <X size={15} /> Refuser
+                </button>
+                <button
+                  onClick={() => handleVote('accept')}
+                  disabled={loading}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-green-500/10 hover:bg-green-500/20 text-green-400 text-sm font-semibold transition-colors disabled:opacity-50"
+                >
+                  <Check size={15} /> Accepter
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

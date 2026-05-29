@@ -3,11 +3,13 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 
+type Period = 'daily' | 'weekly' | 'monthly'
+
 export async function createVoteRequest(
   groupId: string,
   activityId: string,
   targetCount: number,
-  period: 'daily' | 'weekly',
+  period: Period,
   multiplier: number
 ) {
   const supabase = await createClient()
@@ -109,10 +111,11 @@ export async function submitVote(
   if (voteError) return { error: 'Tu as déjà voté pour cette demande' }
 
   // Compter les votes et les électeurs éligibles
-  const [votesRes, eligibleRes, activityRes] = await Promise.all([
+  const [votesRes, eligibleRes, activityRes, voterRes] = await Promise.all([
     supabase.from('objective_votes').select('vote').eq('request_id', requestId),
     supabase.from('group_members').select('*', { count: 'exact', head: true }).eq('group_id', request.group_id).neq('user_id', request.requester_id),
     supabase.from('activities').select('name, emoji').eq('id', request.activity_id).single(),
+    supabase.from('profiles').select('username').eq('id', user.id).single(),
   ])
 
   const acceptCount = (votesRes.data ?? []).filter(v => v.vote === 'accept').length
@@ -121,6 +124,17 @@ export async function submitVote(
   const threshold = Math.floor(eligible / 2) + 1
 
   const activityLabel = `${activityRes.data?.emoji ?? ''} ${activityRes.data?.name ?? ''}`.trim()
+  const voterName = voterRes.data?.username ?? 'Quelqu\'un'
+
+  // Notifier le créateur de l'objectif : "Martin a accepté · 'bien mérité'"
+  const voteWord = vote === 'accept' ? 'a accepté' : 'a refusé'
+  const commentPart = comment.trim() ? ` · « ${comment.trim()} »` : ''
+  await supabase.from('notifications').insert({
+    user_id: request.requester_id,
+    type: 'objective_comment',
+    title: `${vote === 'accept' ? '✅' : '❌'} ${voterName} ${voteWord}`,
+    message: `${activityLabel}${commentPart}`,
+  })
 
   if (acceptCount >= threshold) {
     await Promise.all([
@@ -152,6 +166,107 @@ export async function submitVote(
   }
 
   revalidatePath('/parametres')
+  return { success: true }
+}
+
+export async function forceVote(requestId: string, decision: 'accept' | 'reject') {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Non authentifié' }
+
+  const { data: request } = await supabase
+    .from('objective_vote_requests')
+    .select('id, group_id, requester_id, activity_id, target_count, period, multiplier, status, created_at')
+    .eq('id', requestId)
+    .single()
+
+  if (!request) return { error: 'Demande introuvable' }
+  if (request.status !== 'pending') return { error: 'Cette demande est déjà résolue' }
+
+  // Vérifier que l'utilisateur est le créateur du groupe
+  const { data: group } = await supabase
+    .from('groups')
+    .select('created_by, name')
+    .eq('id', request.group_id)
+    .single()
+
+  if (!group || group.created_by !== user.id) {
+    return { error: 'Seul le créateur du groupe peut forcer' }
+  }
+
+  // Vérifier que 48h se sont écoulées
+  const createdAt = new Date(request.created_at).getTime()
+  const hoursElapsed = (Date.now() - createdAt) / (1000 * 60 * 60)
+  if (hoursElapsed < 48) {
+    return { error: 'Tu pourras forcer après 48h' }
+  }
+
+  const [creatorRes, activityRes] = await Promise.all([
+    supabase.from('profiles').select('username').eq('id', user.id).single(),
+    supabase.from('activities').select('name, emoji').eq('id', request.activity_id).single(),
+  ])
+
+  const activityLabel = `${activityRes.data?.emoji ?? ''} ${activityRes.data?.name ?? ''}`.trim()
+  const creatorName = creatorRes.data?.username ?? 'Le créateur'
+
+  if (decision === 'accept') {
+    await Promise.all([
+      supabase.from('user_objectives').insert({
+        user_id: request.requester_id,
+        activity_id: request.activity_id,
+        target_count: request.target_count,
+        period: request.period,
+        multiplier: request.multiplier,
+      }),
+      supabase.from('objective_vote_requests').update({ status: 'accepted' }).eq('id', requestId),
+      supabase.from('notifications').insert({
+        user_id: request.requester_id,
+        type: 'objective_accepted',
+        title: '✅ Objectif accepté !',
+        message: `Ton objectif "${activityLabel}" a été forcé par ${creatorName}.`,
+      }),
+    ])
+  } else {
+    await Promise.all([
+      supabase.from('objective_vote_requests').update({ status: 'rejected' }).eq('id', requestId),
+      supabase.from('notifications').insert({
+        user_id: request.requester_id,
+        type: 'objective_rejected',
+        title: '❌ Objectif refusé',
+        message: `Ton objectif "${activityLabel}" a été refusé (forcé par ${creatorName}).`,
+      }),
+    ])
+  }
+
+  revalidatePath('/parametres')
+  return { success: true }
+}
+
+export async function markNotificationsRead() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Non authentifié' }
+
+  await supabase
+    .from('notifications')
+    .update({ is_read: true, read_at: new Date().toISOString() })
+    .eq('user_id', user.id)
+    .eq('is_read', false)
+
+  return { success: true }
+}
+
+export async function deleteNotification(notificationId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Non authentifié' }
+
+  await supabase
+    .from('notifications')
+    .delete()
+    .eq('id', notificationId)
+    .eq('user_id', user.id)
+
   return { success: true }
 }
 
