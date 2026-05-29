@@ -46,9 +46,11 @@ export function Confetti({ active, onDone, origin }: Props) {
     })
 
     const ctx = canvas.getContext('2d')!
+    const w = canvas.width
+    const h = canvas.height
 
     function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      ctx.clearRect(0, 0, w, h)
       let alive = false
 
       for (const p of particles) {
@@ -72,7 +74,7 @@ export function Confetti({ active, onDone, origin }: Props) {
       if (alive) {
         rafRef.current = requestAnimationFrame(draw)
       } else {
-        ctx.clearRect(0, 0, canvas.width, canvas.height)
+        ctx.clearRect(0, 0, w, h)
         onDone?.()
       }
     }
