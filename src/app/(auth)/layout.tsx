@@ -10,9 +10,9 @@ const MOCK_ACTIVITIES = [
 ]
 
 const MOCK_RANKING = [
-  { rank: 1, name: '63OG', pts: 340 },
-  { rank: 2, name: '67rose', pts: 290 },
-  { rank: 3, name: 'soumise94', pts: 210 },
+  { rank: 1, name: 'Martin Delon', pts: 340 },
+  { rank: 2, name: 'Camille BR', pts: 290 },
+  { rank: 3, name: 'Jean Duquin', pts: 210 },
   { rank: 4, name: 'grindset_', pts: 175 },
   { rank: 5, name: 'beast_69', pts: 140 },
 ]
