@@ -10,11 +10,11 @@ const MOCK_ACTIVITIES = [
 ]
 
 const MOCK_RANKING = [
-  { rank: 1, name: 'shadowgrind', pts: 340 },
-  { rank: 2, name: 'maxou_fit', pts: 290 },
-  { rank: 3, name: 'lockedin99', pts: 210 },
+  { rank: 1, name: '63OG', pts: 340 },
+  { rank: 2, name: '67rose', pts: 290 },
+  { rank: 3, name: 'soumise94', pts: 210 },
   { rank: 4, name: 'grindset_', pts: 175 },
-  { rank: 5, name: 'beast_mode', pts: 140 },
+  { rank: 5, name: 'beast_69', pts: 140 },
 ]
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
