@@ -103,8 +103,8 @@ export default async function DashboardPage() {
           const p = Array.isArray(m.profile) ? m.profile[0] : m.profile
           return { user_id: m.user_id, username: p?.username ?? '?', avatar_url: p?.avatar_url ?? null, points: totals.get(m.user_id) ?? 0 }
         })
-        .sort((a: GroupRankEntry, b: GroupRankEntry) => b.points - a.points)
-        .map((m: GroupRankEntry, i: number) => ({ ...m, rank: i + 1 }))
+        .sort((a, b) => b.points - a.points)
+        .map((m, i) => ({ ...m, rank: i + 1 }))
     }
 
     // Build chat messages
