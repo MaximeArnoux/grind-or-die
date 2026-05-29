@@ -2,8 +2,9 @@ import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
-import { format, startOfWeek } from 'date-fns'
+import { format, startOfWeek, subDays } from 'date-fns'
 import { fr } from 'date-fns/locale'
+import { toParisDate } from '@/lib/utils'
 import { WeightChartClient } from '@/components/features/WeightChartClient'
 import { ProfileLogsClient } from '@/components/features/ProfileLogsClient'
 import { ADMIN_USER_ID } from '@/lib/constants/admin'
@@ -38,7 +39,15 @@ export default async function ProfilPage({ params }: { params: Promise<{ usernam
 
   const isOwn = user?.id === profile.id
   const isAdmin = user?.id === ADMIN_USER_ID
-  const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 })
+  const nowParis = new Date(new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }))
+  const weekStart = startOfWeek(nowParis, { weekStartsOn: 1 })
+
+  // Les 3 jours à afficher (aujourd'hui, hier, avant-hier)
+  const day0 = format(nowParis, 'yyyy-MM-dd')
+  const day1 = format(subDays(nowParis, 1), 'yyyy-MM-dd')
+  const day2 = format(subDays(nowParis, 2), 'yyyy-MM-dd')
+  const threeDaysAgo = subDays(nowParis, 2)
+  threeDaysAgo.setHours(0, 0, 0, 0)
 
   const [totalPointsRes, weekPointsRes, streakRes, objectivesRes, weightLogsRes, recentLogsRes] = await Promise.all([
     supabase.from('activity_logs').select('points_earned').eq('user_id', profile.id),
@@ -47,10 +56,10 @@ export default async function ProfilPage({ params }: { params: Promise<{ usernam
     supabase.from('user_objectives').select('*, activity:activities(name, emoji)').eq('user_id', profile.id).eq('is_active', true),
     supabase.from('weight_logs').select('*').eq('user_id', profile.id).order('logged_at').limit(30),
     supabase.from('activity_logs')
-      .select('id, points_earned, logged_at, notes, activity:activities(name, emoji, type)')
+      .select('id, points_earned, logged_at, notes, multiplier, activity:activities(name, emoji, type)')
       .eq('user_id', profile.id)
-      .order('logged_at', { ascending: false })
-      .limit(user?.id === ADMIN_USER_ID ? 50 : 10),
+      .gte('logged_at', threeDaysAgo.toISOString())
+      .order('logged_at', { ascending: false }),
   ])
 
   const totalPoints = (totalPointsRes.data ?? []).reduce((sum, l) => sum + l.points_earned, 0)
@@ -58,13 +67,24 @@ export default async function ProfilPage({ params }: { params: Promise<{ usernam
   const streak = streakRes.data
   const objectives = objectivesRes.data ?? []
   const weightLogs = weightLogsRes.data ?? []
-  const recentLogs = (recentLogsRes.data ?? []).map(l => ({
+
+  // Grouper les logs par jour Paris
+  const allLogs = (recentLogsRes.data ?? []).map(l => ({
     id: l.id as string,
     points_earned: l.points_earned as number,
     logged_at: l.logged_at as string,
     notes: l.notes as string | null,
-    activity: (Array.isArray(l.activity) ? l.activity[0] : l.activity) as { name: string | null; emoji: string | null } | null,
+    multiplier: (l.multiplier as number) ?? 1,
+    activity: (Array.isArray(l.activity) ? l.activity[0] : l.activity) as { name: string | null; emoji: string | null; type?: string | null } | null,
   }))
+
+  const logMap = new Map<string, typeof allLogs>([[day0, []], [day1, []], [day2, []]])
+  for (const log of allLogs) {
+    const key = format(toParisDate(log.logged_at), 'yyyy-MM-dd')
+    logMap.get(key)?.push(log)
+  }
+
+  const groupedDays = [day0, day1, day2].map(date => ({ date, logs: logMap.get(date) ?? [] }))
 
   const latestWeight = weightLogs[weightLogs.length - 1]?.weight_kg
 
@@ -159,7 +179,7 @@ export default async function ProfilPage({ params }: { params: Promise<{ usernam
         </CardHeader>
         <CardContent>
           <ProfileLogsClient
-            logs={recentLogs}
+            groupedDays={groupedDays}
             isAdmin={isAdmin}
             username={profile.username}
           />
