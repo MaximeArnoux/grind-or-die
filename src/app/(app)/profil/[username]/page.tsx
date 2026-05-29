@@ -50,7 +50,7 @@ export default async function ProfilPage({ params }: { params: Promise<{ usernam
   threeDaysAgo.setHours(0, 0, 0, 0)
 
   const [totalPointsRes, weekPointsRes, streakRes, objectivesRes, weightLogsRes, recentLogsRes] = await Promise.all([
-    supabase.from('activity_logs').select('points_earned').eq('user_id', profile.id),
+    supabase.from('activity_logs').select('points_earned, logged_at').eq('user_id', profile.id),
     supabase.from('activity_logs').select('points_earned').eq('user_id', profile.id).gte('logged_at', weekStart.toISOString()),
     supabase.from('user_streaks').select('*').eq('user_id', profile.id).single(),
     supabase.from('user_objectives').select('*, activity:activities(name, emoji)').eq('user_id', profile.id).eq('is_active', true),
@@ -62,9 +62,25 @@ export default async function ProfilPage({ params }: { params: Promise<{ usernam
       .order('logged_at', { ascending: false }),
   ])
 
-  const totalPoints = (totalPointsRes.data ?? []).reduce((sum, l) => sum + l.points_earned, 0)
+  const allTimeLogs = totalPointsRes.data ?? []
+  const totalPoints = allTimeLogs.reduce((sum, l) => sum + l.points_earned, 0)
   const weekPoints = (weekPointsRes.data ?? []).reduce((sum, l) => sum + l.points_earned, 0)
   const streak = streakRes.data
+
+  // Meilleur jour : grouper par jour Paris et trouver le max
+  const dayTotals = new Map<string, number>()
+  for (const log of allTimeLogs) {
+    const key = format(toParisDate(log.logged_at), 'yyyy-MM-dd')
+    dayTotals.set(key, (dayTotals.get(key) ?? 0) + log.points_earned)
+  }
+  let bestDayPoints = 0
+  let bestDayDate = ''
+  for (const [date, pts] of dayTotals.entries()) {
+    if (pts > bestDayPoints) { bestDayPoints = pts; bestDayDate = date }
+  }
+  const bestDayLabel = bestDayDate
+    ? `+${bestDayPoints} pts · ${format(new Date(bestDayDate + 'T12:00:00'), 'dd MMM', { locale: fr })}`
+    : '—'
   const objectives = objectivesRes.data ?? []
   const weightLogs = weightLogsRes.data ?? []
 
@@ -133,7 +149,7 @@ export default async function ProfilPage({ params }: { params: Promise<{ usernam
         <StatCard label="Points totaux" value={totalPoints.toLocaleString('fr-FR')} />
         <StatCard label="Cette semaine" value={`+${weekPoints}`} color="text-green-400" />
         <StatCard label="Série actuelle" value={`${streak?.current_streak ?? 0} 🔥`} />
-        <StatCard label="Record série" value={`${streak?.longest_streak ?? 0} jours`} />
+        <StatCard label="Meilleur jour ⭐" value={bestDayLabel} color="text-yellow-400" />
       </div>
 
       {/* Objectives */}
