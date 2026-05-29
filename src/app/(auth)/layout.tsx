@@ -10,9 +10,11 @@ const MOCK_ACTIVITIES = [
 ]
 
 const MOCK_RANKING = [
-  { rank: 1, name: 'shadowgrind', pts: 340, crown: true },
-  { rank: 2, name: 'maxou_fit', pts: 290, crown: false },
-  { rank: 3, name: 'lockedin99', pts: 210, crown: false },
+  { rank: 1, name: 'shadowgrind', pts: 340 },
+  { rank: 2, name: 'maxou_fit', pts: 290 },
+  { rank: 3, name: 'lockedin99', pts: 210 },
+  { rank: 4, name: 'grindset_', pts: 175 },
+  { rank: 5, name: 'beast_mode', pts: 140 },
 ]
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
@@ -59,7 +61,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
                 <Trophy size={13} className="text-yellow-400" />
                 <span className="text-xs text-gray-500">Points totaux</span>
               </div>
-              <p className="text-2xl font-black text-white">4 280</p>
+              <p className="text-2xl font-black text-white">2 340</p>
             </div>
             <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4">
               <div className="flex items-center gap-1.5 mb-1">
@@ -108,21 +110,40 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
                   🏆 Classement du groupe
                 </p>
-                <div className="space-y-2">
-                  {MOCK_RANKING.map(m => (
-                    <div key={m.rank} className={`flex items-center gap-2.5 px-3 py-2 rounded-xl ${m.rank === 1 ? 'bg-yellow-500/10' : ''}`}>
-                      <span className={`text-xs font-black w-4 text-center ${m.rank === 1 ? 'text-yellow-400' : 'text-gray-600'}`}>
-                        {m.rank}
-                      </span>
-                      <div className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-[10px] font-black text-white">
+
+                {/* Podium top 3 */}
+                <div className="flex items-end justify-center gap-3 mb-3">
+                  {[MOCK_RANKING[1], MOCK_RANKING[0], MOCK_RANKING[2]].map((m, idx) => {
+                    const isFirst = m.rank === 1
+                    const height = isFirst ? 'h-14' : m.rank === 2 ? 'h-10' : 'h-8'
+                    const border = isFirst ? 'border-yellow-400 ring-2 ring-yellow-400/30' : m.rank === 2 ? 'border-gray-400' : 'border-amber-700'
+                    const nameColor = isFirst ? 'text-yellow-400' : 'text-gray-300'
+                    const ptsColor = isFirst ? 'text-yellow-400' : 'text-white'
+                    return (
+                      <div key={m.rank} className="flex flex-col items-center gap-1">
+                        {isFirst && <span className="text-base">👑</span>}
+                        <div className={`w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 border-2 ${border} flex items-center justify-center text-[10px] font-black text-white`}>
+                          {m.name.charAt(0).toUpperCase()}
+                        </div>
+                        <span className={`text-[10px] font-bold ${nameColor}`}>{m.name}</span>
+                        <div className={`w-10 ${height} rounded-t-lg flex items-center justify-center ${isFirst ? 'bg-yellow-500/20' : m.rank === 2 ? 'bg-gray-700/50' : 'bg-amber-900/30'}`}>
+                          <span className={`text-[10px] font-black ${ptsColor}`}>{m.pts}</span>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                {/* Reste du classement */}
+                <div className="space-y-1 border-t border-gray-800/60 pt-2">
+                  {MOCK_RANKING.slice(3).map(m => (
+                    <div key={m.rank} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-800/30">
+                      <span className="text-[10px] font-bold text-gray-600 w-3">{m.rank}</span>
+                      <div className="w-5 h-5 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-[9px] font-black text-white">
                         {m.name.charAt(0).toUpperCase()}
                       </div>
-                      <span className={`flex-1 text-xs font-medium ${m.rank === 1 ? 'text-white' : 'text-gray-400'}`}>
-                        {m.name}
-                      </span>
-                      <span className={`text-xs font-black ${m.rank === 1 ? 'text-yellow-400' : 'text-white'}`}>
-                        {m.pts}
-                      </span>
+                      <span className="flex-1 text-[11px] text-gray-400">{m.name}</span>
+                      <span className="text-[11px] font-bold text-white">{m.pts}</span>
                     </div>
                   ))}
                 </div>
