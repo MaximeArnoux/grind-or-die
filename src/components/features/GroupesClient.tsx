@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import { Plus, Users, Copy, Check, LogIn, Crown, LogOut, Trash2, Globe, Lock, Pencil, UserMinus } from 'lucide-react'
@@ -72,7 +72,7 @@ export function GroupesClient({ groups, publicGroups, currentUserId }: { groups:
 
   async function handleCreate() {
     if (!groupName.trim()) return
-    if (!isPublicCreate && !createPassword.trim()) { setError('Un mot de passe est requis pour un groupe privé'); return }
+    if (!isPublicCreate && !createPassword.trim()) { setError('Un mot de passe est requis pour un groupe privÃ©'); return }
     setLoading(true); setError('')
     const result = await createGroup(groupName.trim(), groupDesc.trim() || null, isPublicCreate, createPassword)
     setLoading(false)
@@ -97,7 +97,7 @@ export function GroupesClient({ groups, publicGroups, currentUserId }: { groups:
   async function handleEditGroup() {
     if (!editGroup || !editName.trim()) return
     if (!editIsPublic && !editPassword.trim()) {
-      // Keep existing password if field is empty and group stays private — no error
+      // Keep existing password if field is empty and group stays private â€” no error
     }
     setLoading(true); setError('')
     const result = await updateGroup(editGroup.id, editName, editIsPublic, editPassword || undefined)
@@ -141,19 +141,19 @@ export function GroupesClient({ groups, publicGroups, currentUserId }: { groups:
 
   const confirmTitle = confirm?.type === 'leave' ? 'Quitter le groupe ?' : 'Supprimer le groupe ?'
   const confirmDesc = confirm?.type === 'delete'
-    ? `Le groupe "${confirm.group.name}" et tous ses membres seront définitivement supprimés.`
+    ? `Le groupe "${confirm.group.name}" et tous ses membres seront dÃ©finitivement supprimÃ©s.`
     : confirm?.group.role === 'admin' && confirm.group.members.length > 1
       ? `Tu es admin. En partant, un autre membre deviendra admin automatiquement.`
       : confirm?.group.role === 'admin' && confirm.group.members.length <= 1
-        ? `Tu es le seul membre. Quitter supprimera définitivement le groupe.`
-        : `Tu pourras rejoindre à nouveau avec un code d'invitation.`
+        ? `Tu es le seul membre. Quitter supprimera dÃ©finitivement le groupe.`
+        : `Tu pourras rejoindre Ã  nouveau avec un code d'invitation.`
 
   return (
     <>
       {/* Actions */}
       <div className="flex gap-3">
         <Button onClick={() => { setError(''); setShowCreate(true) }}>
-          <Plus size={16} /> Créer un groupe
+          <Plus size={16} /> CrÃ©er un groupe
         </Button>
         <Button variant="outline" onClick={() => { setError(''); setShowJoin(true) }}>
           <LogIn size={16} /> Rejoindre
@@ -190,7 +190,7 @@ export function GroupesClient({ groups, publicGroups, currentUserId }: { groups:
         <Card className="py-16 text-center">
           <Users size={48} className="mx-auto mb-4 text-gray-700" />
           <p className="text-gray-400 font-semibold">Pas encore dans un groupe</p>
-          <p className="text-sm text-gray-600 mt-2">Crée un groupe ou rejoins celui d&apos;un ami</p>
+          <p className="text-sm text-gray-600 mt-2">CrÃ©e un groupe ou rejoins celui d&apos;un ami</p>
         </Card>
       ) : (
         <div className="space-y-6">
@@ -267,7 +267,7 @@ export function GroupesClient({ groups, publicGroups, currentUserId }: { groups:
                         return (
                           <div key={member.user_id} className="flex flex-col items-center gap-1.5">
                             {isFirst && <Crown size={20} className="text-yellow-400" />}
-                            <Link href={`/profil/${member.username}`} className="flex flex-col items-center gap-1.5 group">
+                            <Link href={`/profil/${encodeURIComponent(member.username)}`} className="flex flex-col items-center gap-1.5 group">
                               <div className={cn(
                                 'w-14 h-14 rounded-full flex items-center justify-center text-lg font-black border-3 overflow-hidden',
                                 isFirst ? 'border-yellow-400 ring-2 ring-yellow-400/30' :
@@ -313,7 +313,7 @@ export function GroupesClient({ groups, publicGroups, currentUserId }: { groups:
                           )}
                         >
                           <span className="text-sm font-bold text-gray-500 w-4 shrink-0">{member.rank}</span>
-                          <Link href={`/profil/${member.username}`} className="flex items-center gap-2 flex-1 min-w-0 group">
+                          <Link href={`/profil/${encodeURIComponent(member.username)}`} className="flex items-center gap-2 flex-1 min-w-0 group">
                             <div className="w-7 h-7 rounded-full bg-gray-700 flex items-center justify-center text-xs font-bold overflow-hidden shrink-0">
                               {member.avatar_url
                                 ? <img src={member.avatar_url} alt={member.username} className="w-full h-full object-cover" />
@@ -366,12 +366,12 @@ export function GroupesClient({ groups, publicGroups, currentUserId }: { groups:
       )}
 
       {/* Create modal */}
-      <Modal open={showCreate} onClose={() => setShowCreate(false)} title="Créer un groupe">
+      <Modal open={showCreate} onClose={() => setShowCreate(false)} title="CrÃ©er un groupe">
         <div className="space-y-4">
           <Input label="Nom du groupe" value={groupName} onChange={e => setGroupName(e.target.value)} placeholder="Les Grinders" />
           <Input label="Description (optionnel)" value={groupDesc} onChange={e => setGroupDesc(e.target.value)} placeholder="On va tous devenir des machines" />
           <div>
-            <p className="text-sm font-medium text-gray-300 mb-2">Visibilité</p>
+            <p className="text-sm font-medium text-gray-300 mb-2">VisibilitÃ©</p>
             <div className="flex gap-2">
               <button
                 onClick={() => setIsPublicCreate(true)}
@@ -383,24 +383,24 @@ export function GroupesClient({ groups, publicGroups, currentUserId }: { groups:
                 onClick={() => setIsPublicCreate(false)}
                 className={cn('flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium border transition-colors', !isPublicCreate ? 'bg-violet-500/10 border-violet-500/40 text-violet-400' : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-white')}
               >
-                <Lock size={14} /> Privé
+                <Lock size={14} /> PrivÃ©
               </button>
             </div>
           </div>
           {!isPublicCreate && (
             <Input label="Mot de passe" type="password" value={createPassword} onChange={e => setCreatePassword(e.target.value)} placeholder="Mot de passe du groupe" />
           )}
-          <p className="text-xs text-gray-600">Maximum 10 membres. Un code d&apos;invitation sera généré automatiquement.</p>
+          <p className="text-xs text-gray-600">Maximum 10 membres. Un code d&apos;invitation sera gÃ©nÃ©rÃ© automatiquement.</p>
           {error && <p className="text-sm text-red-400">{error}</p>}
           <div className="flex gap-3">
             <Button variant="secondary" className="flex-1" onClick={() => setShowCreate(false)}>Annuler</Button>
-            <Button className="flex-1" onClick={handleCreate} loading={loading}>Créer</Button>
+            <Button className="flex-1" onClick={handleCreate} loading={loading}>CrÃ©er</Button>
           </div>
         </div>
       </Modal>
 
       {/* Join modal */}
-      <Modal open={showJoin} onClose={() => setShowJoin(false)} title="Rejoindre un groupe privé">
+      <Modal open={showJoin} onClose={() => setShowJoin(false)} title="Rejoindre un groupe privÃ©">
         <div className="space-y-4">
           <Input
             label="Code d'invitation"
@@ -429,7 +429,7 @@ export function GroupesClient({ groups, publicGroups, currentUserId }: { groups:
         <div className="space-y-4">
           <Input label="Nom du groupe" value={editName} onChange={e => setEditName(e.target.value)} placeholder="Nom du groupe" />
           <div>
-            <p className="text-sm font-medium text-gray-300 mb-2">Visibilité</p>
+            <p className="text-sm font-medium text-gray-300 mb-2">VisibilitÃ©</p>
             <div className="flex gap-2">
               <button
                 onClick={() => setEditIsPublic(true)}
@@ -441,7 +441,7 @@ export function GroupesClient({ groups, publicGroups, currentUserId }: { groups:
                 onClick={() => setEditIsPublic(false)}
                 className={cn('flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium border transition-colors', !editIsPublic ? 'bg-violet-500/10 border-violet-500/40 text-violet-400' : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-white')}
               >
-                <Lock size={14} /> Privé
+                <Lock size={14} /> PrivÃ©
               </button>
             </div>
           </div>
@@ -489,3 +489,4 @@ export function GroupesClient({ groups, publicGroups, currentUserId }: { groups:
     </>
   )
 }
+

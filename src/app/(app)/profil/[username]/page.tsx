@@ -9,7 +9,8 @@ import { ProfileLogsClient } from '@/components/features/ProfileLogsClient'
 import { ADMIN_USER_ID } from '@/lib/constants/admin'
 
 export default async function ProfilPage({ params }: { params: Promise<{ username: string }> }) {
-  const { username } = await params
+  const { username: rawUsername } = await params
+  const username = decodeURIComponent(rawUsername)
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -33,15 +34,7 @@ export default async function ProfilPage({ params }: { params: Promise<{ usernam
     }
   }
 
-  if (!profile) {
-    return (
-      <div className="p-8 text-white space-y-2">
-        <p className="font-bold text-red-400">Profil introuvable — debug</p>
-        <p>username dans URL : <code className="text-yellow-400">{username}</code></p>
-        <p>user connecté : <code className="text-yellow-400">{user?.id ?? 'non connecté'}</code></p>
-      </div>
-    )
-  }
+  if (!profile) notFound()
 
   const isOwn = user?.id === profile.id
   const isAdmin = user?.id === ADMIN_USER_ID

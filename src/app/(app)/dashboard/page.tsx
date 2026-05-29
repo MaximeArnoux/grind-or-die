@@ -219,7 +219,7 @@ export default async function DashboardPage() {
                     <span className={cn('text-sm font-bold w-5 text-center shrink-0', member.rank === 1 ? 'text-yellow-400' : 'text-gray-500')}>
                       {member.rank}
                     </span>
-                    <Link href={`/profil/${member.username}`} className="flex items-center gap-2 flex-1 min-w-0 group">
+                    <Link href={`/profil/${encodeURIComponent(member.username)}`} className="flex items-center gap-2 flex-1 min-w-0 group">
                       <div className="w-7 h-7 rounded-full bg-gray-700 flex items-center justify-center text-xs font-bold overflow-hidden flex-shrink-0">
                         {member.avatar_url
                           ? <img src={member.avatar_url} alt={member.username} className="w-full h-full object-cover" />
