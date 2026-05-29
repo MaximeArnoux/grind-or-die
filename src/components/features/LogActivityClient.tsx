@@ -225,10 +225,17 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
     setCart(prev => prev.filter(i => i.activity.id !== activityId))
   }
 
+  function getMaxAllowed(activity: Activity): number {
+    if (!activity.max_per_day || activity.max_per_day <= 0) return Infinity
+    const alreadyLogged = todayCounts[activity.id] ?? 0
+    return Math.max(1, activity.max_per_day - alreadyLogged)
+  }
+
   function updateCount(activityId: string, delta: number) {
     setCart(prev => prev.map(i => {
       if (i.activity.id !== activityId) return i
-      return { ...i, count: Math.max(1, i.count + delta) }
+      const max = getMaxAllowed(i.activity)
+      return { ...i, count: Math.min(max, Math.max(1, i.count + delta)) }
     }))
   }
 
@@ -622,7 +629,11 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
                             <Minus size={9} className="text-white" />
                           </button>
                           <span className="w-5 text-center text-xs font-bold text-white">{item.count}</span>
-                          <button onClick={() => updateCount(item.activity.id, 1)} className="w-5 h-5 rounded bg-gray-800 flex items-center justify-center hover:bg-gray-700">
+                          <button
+                            onClick={() => updateCount(item.activity.id, 1)}
+                            disabled={item.count >= getMaxAllowed(item.activity)}
+                            className="w-5 h-5 rounded bg-gray-800 flex items-center justify-center hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
+                          >
                             <Plus size={9} className="text-white" />
                           </button>
                         </div>
