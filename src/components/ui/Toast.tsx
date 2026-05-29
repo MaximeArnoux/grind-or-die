@@ -29,7 +29,10 @@ function ToastCard({ item }: { item: ToastItem }) {
 export function ToastContainer() {
   const [toasts, setToasts] = useState<ToastItem[]>([])
 
-  useEffect(() => subscribeToToasts(setToasts), [])
+  useEffect(() => {
+    const unsub = subscribeToToasts(setToasts)
+    return () => { unsub() }
+  }, [])
 
   if (toasts.length === 0) return null
 

@@ -32,8 +32,8 @@ export function toast(type: ToastType, message: string, duration = 3500) {
   }, duration)
 }
 
-export function subscribeToToasts(listener: Listener) {
+export function subscribeToToasts(listener: Listener): () => void {
   listeners.add(listener)
   listener([...items])
-  return () => listeners.delete(listener)
+  return () => { listeners.delete(listener) }
 }
