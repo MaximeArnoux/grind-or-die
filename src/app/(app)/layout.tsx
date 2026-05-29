@@ -5,6 +5,8 @@ import { Sidebar } from '@/components/layout/Sidebar'
 import { Topbar } from '@/components/layout/Topbar'
 import { MobileNav } from '@/components/layout/MobileNav'
 import { VotePanelWrapper } from '@/components/features/VotePanelWrapper'
+import { ToastContainer } from '@/components/ui/Toast'
+import { PageTransition } from '@/components/ui/PageTransition'
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const supabase = await createClient()
@@ -52,13 +54,14 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       <div className="flex-1 flex flex-col min-w-0">
         <Topbar profile={profile} notificationCount={unreadCount ?? 0} />
         <main className="flex-1 p-4 lg:p-6 pb-24 lg:pb-6">
-          {children}
+          <PageTransition>{children}</PageTransition>
         </main>
       </div>
       <MobileNav />
       <Suspense fallback={null}>
         <VotePanelWrapper userId={user.id} />
       </Suspense>
+      <ToastContainer />
     </div>
   )
 }

@@ -53,3 +53,51 @@ input[type=number]::-webkit-outer-spin-button {
   background: #7c3aed40;
   color: #f0f0f4;
 }
+
+/* ── Page transitions ───────────────────────────────────────── */
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-page-enter {
+  animation: page-enter 0.22s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* ── Card stagger ───────────────────────────────────────────── */
+@keyframes card-enter {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-card-enter { animation: card-enter 0.3s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.delay-50  { animation-delay: 50ms; }
+.delay-100 { animation-delay: 100ms; }
+.delay-150 { animation-delay: 150ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-250 { animation-delay: 250ms; }
+.delay-300 { animation-delay: 300ms; }
+
+/* ── Toast ──────────────────────────────────────────────────── */
+@keyframes toast-enter {
+  from { opacity: 0; transform: translateX(110%); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes toast-exit {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(110%); }
+}
+.animate-toast-enter { animation: toast-enter 0.28s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+.animate-toast-exit  { animation: toast-exit  0.22s ease-in forwards; }
+
+/* ── Number count-up flash ──────────────────────────────────── */
+@keyframes number-pop {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.18); color: #a78bfa; }
+  100% { transform: scale(1); }
+}
+.animate-number-pop { animation: number-pop 0.3s cubic-bezier(0.22, 1, 0.36, 1); }
+
+/* ── Button press ───────────────────────────────────────────── */
+button:active:not(:disabled) { transform: scale(0.97); }
+
+/* ── Smooth focus rings ─────────────────────────────────────── */
+:focus-visible { outline: 2px solid #7c3aed; outline-offset: 2px; border-radius: 8px; }
