@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState } from 'react'
 import { Plus, Users, Copy, Check, LogIn, Crown, LogOut, Trash2, Globe, Lock, Pencil, UserMinus } from 'lucide-react'
@@ -56,14 +56,10 @@ export function GroupesClient({ groups, publicGroups, currentUserId }: { groups:
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  // Create group
   const [isPublicCreate, setIsPublicCreate] = useState(false)
   const [createPassword, setCreatePassword] = useState('')
-
-  // Join with code
   const [joinPassword, setJoinPassword] = useState('')
 
-  // Edit group
   const [showEdit, setShowEdit] = useState(false)
   const [editGroup, setEditGroup] = useState<Group | null>(null)
   const [editName, setEditName] = useState('')
@@ -72,7 +68,7 @@ export function GroupesClient({ groups, publicGroups, currentUserId }: { groups:
 
   async function handleCreate() {
     if (!groupName.trim()) return
-    if (!isPublicCreate && !createPassword.trim()) { setError('Un mot de passe est requis pour un groupe privÃ©'); return }
+    if (!isPublicCreate && !createPassword.trim()) { setError('Un mot de passe est requis pour un groupe privé'); return }
     setLoading(true); setError('')
     const result = await createGroup(groupName.trim(), groupDesc.trim() || null, isPublicCreate, createPassword)
     setLoading(false)
@@ -96,9 +92,6 @@ export function GroupesClient({ groups, publicGroups, currentUserId }: { groups:
 
   async function handleEditGroup() {
     if (!editGroup || !editName.trim()) return
-    if (!editIsPublic && !editPassword.trim()) {
-      // Keep existing password if field is empty and group stays private â€” no error
-    }
     setLoading(true); setError('')
     const result = await updateGroup(editGroup.id, editName, editIsPublic, editPassword || undefined)
     setLoading(false)
@@ -141,26 +134,26 @@ export function GroupesClient({ groups, publicGroups, currentUserId }: { groups:
 
   const confirmTitle = confirm?.type === 'leave' ? 'Quitter le groupe ?' : 'Supprimer le groupe ?'
   const confirmDesc = confirm?.type === 'delete'
-    ? `Le groupe "${confirm.group.name}" et tous ses membres seront dÃ©finitivement supprimÃ©s.`
+    ? `Le groupe "${confirm.group.name}" et tous ses membres seront définitivement supprimés.`
     : confirm?.group.role === 'admin' && confirm.group.members.length > 1
       ? `Tu es admin. En partant, un autre membre deviendra admin automatiquement.`
       : confirm?.group.role === 'admin' && confirm.group.members.length <= 1
-        ? `Tu es le seul membre. Quitter supprimera dÃ©finitivement le groupe.`
-        : `Tu pourras rejoindre Ã  nouveau avec un code d'invitation.`
+        ? `Tu es le seul membre. Quitter supprimera définitivement le groupe.`
+        : `Tu pourras rejoindre à nouveau avec un code d'invitation.`
 
   return (
     <>
       {/* Actions */}
       <div className="flex gap-3">
         <Button onClick={() => { setError(''); setShowCreate(true) }}>
-          <Plus size={16} /> CrÃ©er un groupe
+          <Plus size={16} /> Créer un groupe
         </Button>
         <Button variant="outline" onClick={() => { setError(''); setShowJoin(true) }}>
           <LogIn size={16} /> Rejoindre
         </Button>
       </div>
 
-      {/* Public groups available to join */}
+      {/* Groupes publics */}
       {publicGroups.length > 0 && (
         <div>
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Groupes publics</p>
@@ -185,12 +178,12 @@ export function GroupesClient({ groups, publicGroups, currentUserId }: { groups:
         </div>
       )}
 
-      {/* Groups list */}
+      {/* Liste des groupes */}
       {groups.length === 0 ? (
         <Card className="py-16 text-center">
           <Users size={48} className="mx-auto mb-4 text-gray-700" />
           <p className="text-gray-400 font-semibold">Pas encore dans un groupe</p>
-          <p className="text-sm text-gray-600 mt-2">CrÃ©e un groupe ou rejoins celui d&apos;un ami</p>
+          <p className="text-sm text-gray-600 mt-2">Crée un groupe ou rejoins celui d&apos;un ami</p>
         </Card>
       ) : (
         <div className="space-y-6">
@@ -231,7 +224,6 @@ export function GroupesClient({ groups, publicGroups, currentUserId }: { groups:
               </CardHeader>
 
               <CardContent>
-                {/* Admin invite */}
                 {group.role === 'admin' && (
                   <div className="mb-5 p-3 rounded-xl bg-gray-800/40 border border-gray-700/50">
                     <div className="flex flex-col sm:flex-row gap-2">
@@ -253,12 +245,10 @@ export function GroupesClient({ groups, publicGroups, currentUserId }: { groups:
                   </div>
                 )}
 
-                {/* Weekly ranking */}
                 {group.ranking.length > 0 && (
                   <div>
                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Classement hebdo</p>
 
-                    {/* Podium top 3 */}
                     <div className="flex items-end justify-center gap-6 mb-6">
                       {[group.ranking[1], group.ranking[0], group.ranking[2]].map((member, idx) => {
                         if (!member) return <div key={idx} className="w-20" />
@@ -302,7 +292,6 @@ export function GroupesClient({ groups, publicGroups, currentUserId }: { groups:
                       })}
                     </div>
 
-                    {/* Reste du classement */}
                     <div className="space-y-2">
                       {group.ranking.slice(3).map(member => (
                         <div
@@ -342,7 +331,6 @@ export function GroupesClient({ groups, publicGroups, currentUserId }: { groups:
                   </div>
                 )}
 
-                {/* Actions quitter / supprimer */}
                 <div className="flex justify-end gap-3 mt-5 pt-4 border-t border-gray-800/50">
                   {group.role === 'admin' && (
                     <button
@@ -365,13 +353,13 @@ export function GroupesClient({ groups, publicGroups, currentUserId }: { groups:
         </div>
       )}
 
-      {/* Create modal */}
-      <Modal open={showCreate} onClose={() => setShowCreate(false)} title="CrÃ©er un groupe">
+      {/* Modal créer */}
+      <Modal open={showCreate} onClose={() => setShowCreate(false)} title="Créer un groupe">
         <div className="space-y-4">
           <Input label="Nom du groupe" value={groupName} onChange={e => setGroupName(e.target.value)} placeholder="Les Grinders" />
           <Input label="Description (optionnel)" value={groupDesc} onChange={e => setGroupDesc(e.target.value)} placeholder="On va tous devenir des machines" />
           <div>
-            <p className="text-sm font-medium text-gray-300 mb-2">VisibilitÃ©</p>
+            <p className="text-sm font-medium text-gray-300 mb-2">Visibilité</p>
             <div className="flex gap-2">
               <button
                 onClick={() => setIsPublicCreate(true)}
@@ -383,24 +371,24 @@ export function GroupesClient({ groups, publicGroups, currentUserId }: { groups:
                 onClick={() => setIsPublicCreate(false)}
                 className={cn('flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium border transition-colors', !isPublicCreate ? 'bg-violet-500/10 border-violet-500/40 text-violet-400' : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-white')}
               >
-                <Lock size={14} /> PrivÃ©
+                <Lock size={14} /> Privé
               </button>
             </div>
           </div>
           {!isPublicCreate && (
             <Input label="Mot de passe" type="password" value={createPassword} onChange={e => setCreatePassword(e.target.value)} placeholder="Mot de passe du groupe" />
           )}
-          <p className="text-xs text-gray-600">Maximum 10 membres. Un code d&apos;invitation sera gÃ©nÃ©rÃ© automatiquement.</p>
+          <p className="text-xs text-gray-600">Maximum 10 membres. Un code d&apos;invitation sera généré automatiquement.</p>
           {error && <p className="text-sm text-red-400">{error}</p>}
           <div className="flex gap-3">
             <Button variant="secondary" className="flex-1" onClick={() => setShowCreate(false)}>Annuler</Button>
-            <Button className="flex-1" onClick={handleCreate} loading={loading}>CrÃ©er</Button>
+            <Button className="flex-1" onClick={handleCreate} loading={loading}>Créer</Button>
           </div>
         </div>
       </Modal>
 
-      {/* Join modal */}
-      <Modal open={showJoin} onClose={() => setShowJoin(false)} title="Rejoindre un groupe privÃ©">
+      {/* Modal rejoindre */}
+      <Modal open={showJoin} onClose={() => setShowJoin(false)} title="Rejoindre un groupe privé">
         <div className="space-y-4">
           <Input
             label="Code d'invitation"
@@ -424,12 +412,12 @@ export function GroupesClient({ groups, publicGroups, currentUserId }: { groups:
         </div>
       </Modal>
 
-      {/* Edit group modal */}
+      {/* Modal modifier */}
       <Modal open={showEdit} onClose={() => { setShowEdit(false); setEditGroup(null); setError('') }} title="Modifier le groupe">
         <div className="space-y-4">
           <Input label="Nom du groupe" value={editName} onChange={e => setEditName(e.target.value)} placeholder="Nom du groupe" />
           <div>
-            <p className="text-sm font-medium text-gray-300 mb-2">VisibilitÃ©</p>
+            <p className="text-sm font-medium text-gray-300 mb-2">Visibilité</p>
             <div className="flex gap-2">
               <button
                 onClick={() => setEditIsPublic(true)}
@@ -441,7 +429,7 @@ export function GroupesClient({ groups, publicGroups, currentUserId }: { groups:
                 onClick={() => setEditIsPublic(false)}
                 className={cn('flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium border transition-colors', !editIsPublic ? 'bg-violet-500/10 border-violet-500/40 text-violet-400' : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-white')}
               >
-                <Lock size={14} /> PrivÃ©
+                <Lock size={14} /> Privé
               </button>
             </div>
           </div>
@@ -462,7 +450,7 @@ export function GroupesClient({ groups, publicGroups, currentUserId }: { groups:
         </div>
       </Modal>
 
-      {/* Confirmation leave / delete modal */}
+      {/* Modal confirmation */}
       <Modal
         open={confirm !== null}
         onClose={() => { setConfirm(null); setError('') }}
@@ -475,12 +463,7 @@ export function GroupesClient({ groups, publicGroups, currentUserId }: { groups:
             <Button variant="secondary" className="flex-1" onClick={() => { setConfirm(null); setError('') }}>
               Annuler
             </Button>
-            <Button
-              variant="danger"
-              className="flex-1"
-              onClick={handleConfirmAction}
-              loading={loading}
-            >
+            <Button variant="danger" className="flex-1" onClick={handleConfirmAction} loading={loading}>
               {confirm?.type === 'leave' ? 'Quitter' : 'Supprimer'}
             </Button>
           </div>
@@ -489,4 +472,3 @@ export function GroupesClient({ groups, publicGroups, currentUserId }: { groups:
     </>
   )
 }
-

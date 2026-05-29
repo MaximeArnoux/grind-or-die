@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState } from 'react'
 import { Trophy, TrendingUp, Zap, Flame, Crown, Users } from 'lucide-react'
@@ -37,11 +37,11 @@ interface Props {
   groupRankings: GroupRanking[]
 }
 
-const TABS = ['Groupe', 'National (paramÃ¨tres de base)', 'Historique']
+const TABS = ['Groupe', 'National', 'Historique']
 const TIMEFRAMES = ['Hebdo', 'Lifetime']
 
 export function RankingsClient({ weeklyRanking, lifetimeRanking, chartData, weekSummary, currentUserId, userGroups, groupRankings }: Props) {
-  const [tab, setTab] = useState(userGroups.length > 0 ? 'Groupe' : 'National (paramÃ¨tres de base)')
+  const [tab, setTab] = useState(userGroups.length > 0 ? 'Groupe' : 'National')
   const [timeframe, setTimeframe] = useState('Hebdo')
   const [selectedGroupId, setSelectedGroupId] = useState<string>(userGroups[0]?.id ?? '')
 
@@ -69,28 +69,24 @@ export function RankingsClient({ weeklyRanking, lifetimeRanking, chartData, week
             )}
           >
             {t}
-            {t === 'National (paramÃ¨tres de base)' && (
-              <span className="ml-1.5 text-[10px] text-gray-500">ðŸ”’</span>
-            )}
           </button>
         ))}
       </div>
 
-      {/* â”€â”€ GROUPE TAB â”€â”€ */}
+      {/* GROUPE TAB */}
       {tab === 'Groupe' && (
         <>
           {userGroups.length === 0 ? (
             <div className="text-center py-16 text-gray-600">
               <Trophy size={48} className="mx-auto mb-4 opacity-30" />
               <p className="font-semibold text-lg text-gray-400">Pas encore dans un groupe</p>
-              <p className="text-sm mt-2">Rejoins ou crÃ©e un groupe pour voir le classement de tes amis</p>
+              <p className="text-sm mt-2">Rejoins ou crée un groupe pour voir le classement de tes amis</p>
               <Link href="/groupes" className="inline-block mt-4 text-sm text-violet-400 hover:text-violet-300">
-                Rejoindre un groupe â†’
+                Rejoindre un groupe →
               </Link>
             </div>
           ) : (
             <div className="space-y-4">
-              {/* Group selector (if multiple groups) */}
               {userGroups.length > 1 && (
                 <div className="flex gap-2 flex-wrap">
                   {userGroups.map(g => (
@@ -108,22 +104,20 @@ export function RankingsClient({ weeklyRanking, lifetimeRanking, chartData, week
                 </div>
               )}
 
-              {/* Group ranking card */}
               <Card>
                 <CardHeader>
                   <CardTitle>
-                    ðŸ† {currentGroupRanking?.groupName ?? 'Groupe'} â€” Classement hebdo
+                    🏆 {currentGroupRanking?.groupName ?? 'Groupe'} — Classement hebdo
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   {(currentGroupRanking?.ranking.length ?? 0) === 0 ? (
                     <div className="text-center py-8 text-gray-600">
                       <Users size={36} className="mx-auto mb-3 opacity-40" />
-                      <p className="text-sm">Aucune activitÃ© cette semaine</p>
+                      <p className="text-sm">Aucune activité cette semaine</p>
                     </div>
                   ) : (
                     <>
-                      {/* Podium */}
                       {groupTop3.length > 0 && (
                         <div className="flex items-end justify-center gap-6 mb-6">
                           {groupPodium.map((entry, idx) => {
@@ -158,7 +152,6 @@ export function RankingsClient({ weeklyRanking, lifetimeRanking, chartData, week
                         </div>
                       )}
 
-                      {/* Rest of ranking */}
                       {groupRest.length > 0 && (
                         <div className="space-y-2">
                           {groupRest.map(entry => (
@@ -195,8 +188,8 @@ export function RankingsClient({ weeklyRanking, lifetimeRanking, chartData, week
         </>
       )}
 
-      {/* â”€â”€ NATIONAL TAB â”€â”€ */}
-      {tab === 'National (paramÃ¨tres de base)' && (
+      {/* NATIONAL TAB */}
+      {tab === 'National' && (
         <div className="grid lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-4">
             <div className="flex gap-2">
@@ -217,7 +210,7 @@ export function RankingsClient({ weeklyRanking, lifetimeRanking, chartData, week
             {top3.length > 0 && (
               <Card>
                 <CardHeader>
-                  <CardTitle>ðŸ† Classement national ({timeframe.toLowerCase()})</CardTitle>
+                  <CardTitle>🏆 Classement national ({timeframe.toLowerCase()})</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-end justify-center gap-4 mb-6">
@@ -226,7 +219,7 @@ export function RankingsClient({ weeklyRanking, lifetimeRanking, chartData, week
                       const isFirst = entry.rank === 1
                       return (
                         <div key={entry.user_id} className={cn('flex flex-col items-center gap-2', isFirst && 'order-2')}>
-                          {isFirst && <span className="text-2xl">ðŸ‘‘</span>}
+                          {isFirst && <span className="text-2xl">👑</span>}
                           <Link href={`/profil/${encodeURIComponent(entry.username)}`} className="flex flex-col items-center gap-2 group">
                             <div className={cn(
                               'w-16 h-16 rounded-full flex items-center justify-center text-xl font-black border-4 overflow-hidden',
@@ -284,42 +277,42 @@ export function RankingsClient({ weeklyRanking, lifetimeRanking, chartData, week
             )}
           </div>
 
-          {/* Right: evolution + summary */}
+          {/* Right: évolution + résumé */}
           <div className="space-y-4">
             <Card>
-              <CardHeader><CardTitle>Ton Ã©volution</CardTitle></CardHeader>
+              <CardHeader><CardTitle>Ton évolution</CardTitle></CardHeader>
               <CardContent>
                 <DashboardChart data={chartData} />
               </CardContent>
             </Card>
 
             <Card>
-              <CardHeader><CardTitle>RÃ©sumÃ© de la semaine</CardTitle></CardHeader>
+              <CardHeader><CardTitle>Résumé de la semaine</CardTitle></CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-400 flex items-center gap-2">
-                      <TrendingUp size={14} className="text-green-400" /> Points gagnÃ©s
+                      <TrendingUp size={14} className="text-green-400" /> Points gagnés
                     </span>
                     <span className="font-bold text-white">{weekSummary.points_gained} pts</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-400 flex items-center gap-2">
-                      <Zap size={14} className="text-violet-400" /> ActivitÃ©s validÃ©es
+                      <Zap size={14} className="text-violet-400" /> Activités validées
                     </span>
                     <span className="font-bold text-white">{weekSummary.activities_validated}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-400 flex items-center gap-2">
-                      <Trophy size={14} className="text-yellow-400" /> Meilleure journÃ©e
+                      <Trophy size={14} className="text-yellow-400" /> Meilleure journée
                     </span>
                     <span className="font-bold text-white">{weekSummary.best_day_points} pts ({weekSummary.best_day_name})</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-400 flex items-center gap-2">
-                      <Flame size={14} className="text-orange-400" /> SÃ©rie actuelle
+                      <Flame size={14} className="text-orange-400" /> Série actuelle
                     </span>
-                    <span className="font-bold text-white">{weekSummary.current_streak} jours ðŸ”¥</span>
+                    <span className="font-bold text-white">{weekSummary.current_streak} jours 🔥</span>
                   </div>
                 </div>
               </CardContent>
@@ -328,14 +321,13 @@ export function RankingsClient({ weeklyRanking, lifetimeRanking, chartData, week
         </div>
       )}
 
-      {/* â”€â”€ HISTORIQUE TAB â”€â”€ */}
+      {/* HISTORIQUE TAB */}
       {tab === 'Historique' && (
         <div className="text-center py-16 text-gray-600">
           <Trophy size={48} className="mx-auto mb-4 opacity-30" />
-          <p className="text-gray-400">Historique des classements bientÃ´t disponible</p>
+          <p className="text-gray-400">Historique des classements bientôt disponible</p>
         </div>
       )}
     </div>
   )
 }
-
