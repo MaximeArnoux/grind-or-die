@@ -13,11 +13,25 @@ export default async function ProfilPage({ params }: { params: Promise<{ usernam
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const { data: profile } = await supabase
+  let { data: profile } = await supabase
     .from('profiles')
     .select('*')
     .ilike('username', username)
-    .single()
+    .maybeSingle()
+
+  // Fallback: si la recherche par username échoue (RLS ou données manquantes),
+  // essaie de retrouver le profil du user connecté par son ID
+  if (!profile && user) {
+    const { data: ownProfile } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    if (ownProfile && ownProfile.username?.toLowerCase() === username.toLowerCase()) {
+      profile = ownProfile
+    }
+  }
 
   if (!profile) notFound()
 
