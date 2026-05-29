@@ -8,12 +8,9 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Modal } from '@/components/ui/Modal'
 import { Input } from '@/components/ui/Input'
-import { Confetti } from '@/components/ui/Confetti'
-import { AnimatedNumber } from '@/components/ui/AnimatedNumber'
 import type { Activity, UserObjective } from '@/types'
 import { formatPoints, cn } from '@/lib/utils'
 import { ACTIVITY_CATEGORIES } from '@/lib/constants/activities'
-import { toast } from '@/lib/toast'
 
 const SPORT_ACTIVITIES = ['Course à pied', 'Vélo', 'Natation', 'Salle de sport', 'Street workout', 'Pompes', 'Pas']
 const SLEEP_ACTIVITY = 'Sommeil'
@@ -110,7 +107,7 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
   const [cart, setCart] = useState<CartItem[]>([])
   const [cartExpanded, setCartExpanded] = useState(true)
   const [loading, setLoading] = useState(false)
-  const [confetti, setConfetti] = useState(false)
+  const [success, setSuccess] = useState(false)
   const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([])
   const [logDate, setLogDate] = useState<'today' | 'yesterday'>('today')
 
@@ -265,11 +262,8 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
         )
       }
       if (!error) {
-        toast('success', `${cart.length} activité${cart.length > 1 ? 's' : ''} · ${totalPoints >= 0 ? '+' : ''}${totalPoints} pts`)
-        setConfetti(true)
-        setCart([])
-        setSelectedGroupIds([])
-        router.refresh()
+        setSuccess(true)
+        setTimeout(() => { setSuccess(false); setCart([]); setSelectedGroupIds([]); router.refresh() }, 1500)
       }
     } finally {
       setLoading(false)
@@ -296,7 +290,7 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
     setSportLoading(true)
     const ok = await logDirectly(disciplineNames[discipline], pts, unitLabel || undefined)
     setSportLoading(false)
-    if (ok) { setShowSport(false); setSportValue(''); toast('success', 'Session sport enregistrée !'); router.refresh() }
+    if (ok) { setShowSport(false); setSportValue(''); router.refresh() }
   }
 
   async function handleSleep() {
@@ -331,7 +325,6 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
       setShowSleep(false)
       setBedtimeHours(''); setBedtimeMinutes('0')
       setWakeHours(''); setWakeMinutes('0')
-      toast('success', 'Sommeil enregistré !')
       router.refresh()
     }
   }
@@ -343,7 +336,7 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
     setJeuxLoading(true)
     const ok = await logDirectly('Jeux vidéo', pts, `${h}h de jeux`)
     setJeuxLoading(false)
-    if (ok) { setShowJeux(false); setJeuxHours(''); toast('info', 'Jeux vidéo enregistrés'); router.refresh() }
+    if (ok) { setShowJeux(false); setJeuxHours(''); router.refresh() }
   }
 
   async function handleReseaux() {
@@ -356,7 +349,7 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
     setReseauxLoading(true)
     const ok = await logDirectly('Réseaux sociaux', pts, `${h}${mStr} de réseaux`)
     setReseauxLoading(false)
-    if (ok) { setShowReseaux(false); setReseauxHours(''); setReseauxMinutes('0'); toast('info', 'Réseaux sociaux enregistrés'); router.refresh() }
+    if (ok) { setShowReseaux(false); setReseauxHours(''); setReseauxMinutes('0'); router.refresh() }
   }
 
   async function handleCreate() {
@@ -419,7 +412,6 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
 
   return (
     <div className={cn('space-y-5', cart.length > 0 ? 'pb-52 lg:pb-48' : '')}>
-      <Confetti active={confetti} onDone={() => setConfetti(false)} />
       {/* Date selector */}
       <div className="flex gap-2">
         <button
@@ -565,11 +557,9 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
                 <span className="text-sm font-semibold text-white">{cart.length} activité{cart.length > 1 ? 's' : ''}</span>
               </div>
               <div className="flex items-center gap-3">
-                <AnimatedNumber
-                  value={totalPoints}
-                  suffix=" pts"
-                  className={cn('text-xl font-black tabular-nums', totalPoints >= 0 ? 'text-green-400' : 'text-red-400')}
-                />
+                <span className={cn('text-xl font-black tabular-nums', totalPoints >= 0 ? 'text-green-400' : 'text-red-400')}>
+                  {totalPoints >= 0 ? '+' : ''}{totalPoints} pts
+                </span>
                 {cartExpanded ? <ChevronDown size={16} className="text-gray-500" /> : <ChevronUp size={16} className="text-gray-500" />}
               </div>
             </button>
@@ -633,7 +623,7 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
 
                 <div className="px-4 py-3 border-t border-gray-800">
                   <Button className="w-full" size="lg" onClick={handleLogAll} loading={loading}>
-                    {`Valider ${cart.length} activité${cart.length > 1 ? 's' : ''} · ${totalPoints >= 0 ? '+' : ''}${totalPoints} pts`}
+                    {success ? '✅ Activités enregistrées !' : `Valider ${cart.length} activité${cart.length > 1 ? 's' : ''} · ${totalPoints >= 0 ? '+' : ''}${totalPoints} pts`}
                   </Button>
                 </div>
               </div>

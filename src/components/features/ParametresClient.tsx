@@ -10,7 +10,6 @@ import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { Badge } from '@/components/ui/Badge'
 import { createVoteRequest, cancelVoteRequest } from '@/app/(app)/parametres/actions'
-import { toast } from '@/lib/toast'
 import type { Profile, Activity } from '@/types'
 
 interface Props {
@@ -40,6 +39,7 @@ export function ParametresClient({ profile, objectives, pendingVoteRequests, act
   const [heightCm, setHeightCm] = useState(profile?.height_cm?.toString() ?? '')
   const [weightKg, setWeightKg] = useState(latestWeight?.toString() ?? '')
   const [profileLoading, setProfileLoading] = useState(false)
+  const [profileSuccess, setProfileSuccess] = useState(false)
 
   // Objective modal
   const [showObjective, setShowObjective] = useState(false)
@@ -54,6 +54,7 @@ export function ParametresClient({ profile, objectives, pendingVoteRequests, act
   // Password
   const [newPassword, setNewPassword] = useState('')
   const [pwLoading, setPwLoading] = useState(false)
+  const [pwSuccess, setPwSuccess] = useState(false)
 
   async function saveProfile() {
     setProfileLoading(true)
@@ -73,7 +74,8 @@ export function ParametresClient({ profile, objectives, pendingVoteRequests, act
         })
       }
 
-      toast('success', 'Profil mis à jour !')
+      setProfileSuccess(true)
+      setTimeout(() => setProfileSuccess(false), 2000)
       router.refresh()
     } finally {
       setProfileLoading(false)
@@ -145,8 +147,9 @@ export function ParametresClient({ profile, objectives, pendingVoteRequests, act
     if (newPassword.length < 8) return
     setPwLoading(true)
     await supabase.auth.updateUser({ password: newPassword })
-    toast('success', 'Mot de passe changé !')
+    setPwSuccess(true)
     setNewPassword('')
+    setTimeout(() => setPwSuccess(false), 2000)
     setPwLoading(false)
   }
 
@@ -217,7 +220,7 @@ export function ParametresClient({ profile, objectives, pendingVoteRequests, act
             <Input label="Poids actuel (kg)" type="number" value={weightKg} onChange={e => setWeightKg(e.target.value)} placeholder="70" />
           </div>
           <Button onClick={saveProfile} loading={profileLoading} className="w-full">
-            Sauvegarder
+            {profileSuccess ? '✅ Profil mis à jour !' : 'Sauvegarder'}
           </Button>
         </CardContent>
       </Card>
@@ -310,7 +313,7 @@ export function ParametresClient({ profile, objectives, pendingVoteRequests, act
             placeholder="8 caractères minimum"
           />
           <Button variant="secondary" onClick={changePassword} loading={pwLoading}>
-            Changer le mot de passe
+            {pwSuccess ? '✅ Mot de passe changé !' : 'Changer le mot de passe'}
           </Button>
         </CardContent>
       </Card>
