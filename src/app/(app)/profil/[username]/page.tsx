@@ -98,7 +98,7 @@ export default async function ProfilPage({ params }: { params: Promise<{ usernam
     logMap.get(key)?.push(log)
   }
 
-  const groupedDays = [day0, day1, day2].map(date => ({ date, logs: logMap.get(date) ?? [] }))
+  const groupedDays = [day0, day1, day2].map(date => ({ date, logs: logMap.get(date) ?? [], isToday: date === day0 }))
 
   const latestWeight = weightLogs[weightLogs.length - 1]?.weight_kg
 

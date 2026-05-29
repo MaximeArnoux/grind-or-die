@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Trash2 } from 'lucide-react'
 import { format, isToday, isYesterday, parseISO } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import { formatPoints, capitalizeFirst, cn } from '@/lib/utils'
+import { formatPoints, capitalizeFirst, cn, toParisDate } from '@/lib/utils'
 import { adminDeleteLog } from '@/app/(app)/profil/actions'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
@@ -23,6 +23,7 @@ interface Log {
 interface DayGroup {
   date: string
   logs: Log[]
+  isToday: boolean
 }
 
 interface Props {
@@ -60,7 +61,7 @@ export function ProfileLogsClient({ groupedDays, isAdmin, username }: Props) {
   return (
     <>
       <div className="space-y-4">
-        {groupedDays.map(({ date, logs }) => {
+        {groupedDays.map(({ date, logs, isToday }) => {
           const dayTotal = logs.reduce((sum, l) => sum + l.points_earned, 0)
           const label = getDayLabel(date)
 
@@ -88,9 +89,10 @@ export function ProfileLogsClient({ groupedDays, isAdmin, username }: Props) {
                           <span className="text-lg shrink-0">{log.activity?.emoji ?? '⚡'}</span>
                           <div className="min-w-0">
                             <p className="text-sm font-medium text-white truncate">{log.activity?.name ?? '?'}</p>
-                            {(log.notes || (log.multiplier ?? 1) > 1) && (
+                            {(log.notes || (log.multiplier ?? 1) > 1 || isToday) && (
                               <p className="text-xs text-gray-500 truncate">
-                                {log.notes && <span>{log.notes}</span>}
+                                {isToday && <span className="text-gray-600">{format(toParisDate(log.logged_at), 'HH:mm')}</span>}
+                                {log.notes && <span>{isToday ? ' · ' : ''}{log.notes}</span>}
                                 {(log.multiplier ?? 1) > 1 && <span className="text-violet-400"> · ×{log.multiplier} objectif</span>}
                               </p>
                             )}
