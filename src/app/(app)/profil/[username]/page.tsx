@@ -33,7 +33,15 @@ export default async function ProfilPage({ params }: { params: Promise<{ usernam
     }
   }
 
-  if (!profile) notFound()
+  if (!profile) {
+    return (
+      <div className="p-8 text-white space-y-2">
+        <p className="font-bold text-red-400">Profil introuvable — debug</p>
+        <p>username dans URL : <code className="text-yellow-400">{username}</code></p>
+        <p>user connecté : <code className="text-yellow-400">{user?.id ?? 'non connecté'}</code></p>
+      </div>
+    )
+  }
 
   const isOwn = user?.id === profile.id
   const isAdmin = user?.id === ADMIN_USER_ID
