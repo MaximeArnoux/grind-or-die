@@ -96,9 +96,15 @@ interface Props {
   userObjectives: UserObjective[]
   userId: string
   userGroups: GroupOption[]
+  todayCounts: Record<string, number>
 }
 
-export function LogActivityClient({ activities, userObjectives, userId, userGroups }: Props) {
+function isAtDailyLimit(activity: Activity, todayCounts: Record<string, number>): boolean {
+  if (!activity.max_per_day || activity.max_per_day <= 0) return false
+  return (todayCounts[activity.id] ?? 0) >= activity.max_per_day
+}
+
+export function LogActivityClient({ activities, userObjectives, userId, userGroups, todayCounts }: Props) {
   const router = useRouter()
   const supabase = createClient()
 
@@ -149,6 +155,21 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
     userObjectives.forEach(o => map.set(o.activity_id, o))
     return map
   }, [userObjectives])
+
+  const sommeilAtLimit = useMemo(() => {
+    const a = activities.find(a => a.name === SLEEP_ACTIVITY)
+    return a ? isAtDailyLimit(a, todayCounts) : false
+  }, [activities, todayCounts])
+
+  const salleAtLimit = useMemo(() => {
+    const a = activities.find(a => a.name === 'Salle de sport')
+    return a ? isAtDailyLimit(a, todayCounts) : false
+  }, [activities, todayCounts])
+
+  const streetAtLimit = useMemo(() => {
+    const a = activities.find(a => a.name === 'Street workout')
+    return a ? isAtDailyLimit(a, todayCounts) : false
+  }, [activities, todayCounts])
 
   // Activities excluding Fitness and Sommeil categories (handled by special cards)
   const regularActivities = useMemo(() => {
@@ -455,11 +476,15 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
               <p className="text-xs text-gray-500">Course, vélo, natation…</p>
             </div>
           </button>
-          <button onClick={() => setShowSleep(true)} className="flex items-center gap-3 p-4 rounded-xl border border-indigo-500/30 bg-indigo-500/5 hover:bg-indigo-500/10 transition-all text-left">
+          <button
+            onClick={() => !sommeilAtLimit && setShowSleep(true)}
+            disabled={sommeilAtLimit}
+            className={cn('flex items-center gap-3 p-4 rounded-xl border transition-all text-left', sommeilAtLimit ? 'border-gray-800 bg-gray-900/30 opacity-50 cursor-not-allowed' : 'border-indigo-500/30 bg-indigo-500/5 hover:bg-indigo-500/10')}
+          >
             <span className="text-2xl">😴</span>
             <div>
-              <p className="text-sm font-bold text-white">Sommeil</p>
-              <p className="text-xs text-gray-500">Durée de la nuit</p>
+              <p className={cn('text-sm font-bold', sommeilAtLimit ? 'text-gray-500' : 'text-white')}>Sommeil</p>
+              <p className="text-xs text-gray-500">{sommeilAtLimit ? 'Limite atteinte pour ajd' : 'Durée de la nuit'}</p>
             </div>
           </button>
           <button onClick={() => setShowJeux(true)} className="flex items-center gap-3 p-4 rounded-xl border border-red-500/30 bg-red-500/5 hover:bg-red-500/10 transition-all text-left">
@@ -507,33 +532,41 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
           const hasObjective = objectiveMap.has(activity.id)
           const cartItem = cartMap.get(activity.id)
           const inCart = !!cartItem
+          const atLimit = isAtDailyLimit(activity, todayCounts)
           return (
             <button
               key={activity.id}
-              onClick={() => addToCart(activity)}
+              onClick={() => !atLimit && addToCart(activity)}
+              disabled={atLimit}
               className={cn(
                 'flex items-center justify-between p-4 rounded-xl border text-left transition-all',
-                inCart ? 'border-violet-500 bg-violet-600/10' : 'border-gray-800 bg-gray-900 hover:border-gray-700 hover:bg-gray-800/50'
+                atLimit
+                  ? 'border-gray-800 bg-gray-900/30 opacity-50 cursor-not-allowed'
+                  : inCart ? 'border-violet-500 bg-violet-600/10' : 'border-gray-800 bg-gray-900 hover:border-gray-700 hover:bg-gray-800/50'
               )}
             >
               <div className="flex items-center gap-3">
                 <span className="text-xl">{activity.emoji}</span>
                 <div>
-                  <p className="text-sm font-medium text-white">{activity.name}</p>
-                  <p className="text-xs text-gray-500">{activity.category?.name}</p>
+                  <p className={cn('text-sm font-medium', atLimit ? 'text-gray-500' : 'text-white')}>{activity.name}</p>
+                  <p className="text-xs text-gray-500">
+                    {atLimit ? 'Limite atteinte pour ajd' : activity.category?.name}
+                  </p>
                 </div>
-                {hasObjective && <Badge variant="violet" className="text-[10px]">×{objectiveMap.get(activity.id)?.multiplier}</Badge>}
+                {hasObjective && !atLimit && <Badge variant="violet" className="text-[10px]">×{objectiveMap.get(activity.id)?.multiplier}</Badge>}
               </div>
-              <div className="flex items-center gap-3">
-                <span className={cn('text-sm font-bold', activity.points >= 0 ? 'text-green-400' : 'text-red-400')}>
-                  {formatPoints(activity.points)} pts
-                </span>
-                {inCart && (
-                  <div className="flex items-center justify-center w-6 h-6 bg-violet-600 rounded-full">
-                    <span className="text-[10px] font-black text-white">{cartItem.count}</span>
-                  </div>
-                )}
-              </div>
+              {!atLimit && (
+                <div className="flex items-center gap-3">
+                  <span className={cn('text-sm font-bold', activity.points >= 0 ? 'text-green-400' : 'text-red-400')}>
+                    {formatPoints(activity.points)} pts
+                  </span>
+                  {inCart && (
+                    <div className="flex items-center justify-center w-6 h-6 bg-violet-600 rounded-full">
+                      <span className="text-[10px] font-black text-white">{cartItem.count}</span>
+                    </div>
+                  )}
+                </div>
+              )}
             </button>
           )
         })}
@@ -638,21 +671,27 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
           <div>
             <p className="text-sm font-medium text-gray-300 mb-2">Discipline</p>
             <div className="grid grid-cols-4 gap-2">
-              {DISCIPLINES.map(d => (
-                <button
-                  key={d.key}
-                  onClick={() => { setDiscipline(d.key); setSportValue('') }}
-                  className={cn(
-                    'flex flex-col items-center gap-1 py-3 rounded-xl border text-xs font-medium transition-all',
-                    discipline === d.key
-                      ? 'border-green-500/50 bg-green-500/10 text-green-400'
-                      : 'border-gray-700 bg-gray-800 text-gray-400 hover:text-white hover:border-gray-600'
-                  )}
-                >
-                  <span className="text-xl">{d.emoji}</span>
-                  {d.label}
-                </button>
-              ))}
+              {DISCIPLINES.map(d => {
+                const disciplineAtLimit = (d.key === 'salle' && salleAtLimit) || (d.key === 'street' && streetAtLimit)
+                return (
+                  <button
+                    key={d.key}
+                    onClick={() => { if (!disciplineAtLimit) { setDiscipline(d.key); setSportValue('') } }}
+                    disabled={disciplineAtLimit}
+                    className={cn(
+                      'flex flex-col items-center gap-1 py-3 rounded-xl border text-xs font-medium transition-all',
+                      disciplineAtLimit
+                        ? 'border-gray-800 bg-gray-900/30 text-gray-600 opacity-50 cursor-not-allowed'
+                        : discipline === d.key
+                          ? 'border-green-500/50 bg-green-500/10 text-green-400'
+                          : 'border-gray-700 bg-gray-800 text-gray-400 hover:text-white hover:border-gray-600'
+                    )}
+                  >
+                    <span className="text-xl">{d.emoji}</span>
+                    {disciplineAtLimit ? '✓' : d.label}
+                  </button>
+                )
+              })}
             </div>
           </div>
 

@@ -7,7 +7,11 @@ export default async function AjouterPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const [activitiesRes, objectivesRes, groupMembershipsRes] = await Promise.all([
+  const nowParis = new Date(new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }))
+  const todayStart = new Date(nowParis)
+  todayStart.setHours(0, 0, 0, 0)
+
+  const [activitiesRes, objectivesRes, groupMembershipsRes, todayLogsRes] = await Promise.all([
     supabase
       .from('activities')
       .select('*, category:activity_categories(name, emoji, color)')
@@ -22,7 +26,19 @@ export default async function AjouterPage() {
       .from('group_members')
       .select('group_id, group:groups(id, name)')
       .eq('user_id', user.id),
+    supabase
+      .from('activity_logs')
+      .select('activity_id')
+      .eq('user_id', user.id)
+      .gte('logged_at', todayStart.toISOString()),
   ])
+
+  const todayCounts: Record<string, number> = {}
+  for (const log of todayLogsRes.data ?? []) {
+    if (log.activity_id) {
+      todayCounts[log.activity_id] = (todayCounts[log.activity_id] ?? 0) + 1
+    }
+  }
 
   const userGroups = (groupMembershipsRes.data ?? []).map((m: any) => {
     const g = Array.isArray(m.group) ? m.group[0] : m.group
@@ -40,6 +56,7 @@ export default async function AjouterPage() {
         userObjectives={objectivesRes.data ?? []}
         userId={user.id}
         userGroups={userGroups}
+        todayCounts={todayCounts}
       />
     </div>
   )
