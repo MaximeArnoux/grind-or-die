@@ -78,9 +78,7 @@ export default async function ProfilPage({ params }: { params: Promise<{ usernam
   for (const [date, pts] of dayTotals.entries()) {
     if (pts > bestDayPoints) { bestDayPoints = pts; bestDayDate = date }
   }
-  const bestDayLabel = bestDayDate
-    ? `+${bestDayPoints} pts · ${format(new Date(bestDayDate + 'T12:00:00'), 'dd MMM', { locale: fr })}`
-    : '—'
+  const bestDayLabel = bestDayPoints > 0 ? `+${bestDayPoints} pts` : '—'
   const objectives = objectivesRes.data ?? []
   const weightLogs = weightLogsRes.data ?? []
 
