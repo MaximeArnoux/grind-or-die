@@ -144,6 +144,7 @@ export async function submitVote(
         target_count: request.target_count,
         period: request.period,
         multiplier: request.multiplier,
+        is_active: true,
       }),
       supabase.from('objective_vote_requests').update({ status: 'accepted' }).eq('id', requestId),
       supabase.from('notifications').insert({
@@ -217,6 +218,7 @@ export async function forceVote(requestId: string, decision: 'accept' | 'reject'
         target_count: request.target_count,
         period: request.period,
         multiplier: request.multiplier,
+        is_active: true,
       }),
       supabase.from('objective_vote_requests').update({ status: 'accepted' }).eq('id', requestId),
       supabase.from('notifications').insert({
