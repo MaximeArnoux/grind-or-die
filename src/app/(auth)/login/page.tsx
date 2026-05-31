@@ -52,17 +52,24 @@ export default function LoginPage() {
           required
           autoComplete="email"
         />
-        <Input
-          id="password"
-          type="password"
-          label="Mot de passe"
-          placeholder="••••••••"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          icon={<Lock size={16} />}
-          required
-          autoComplete="current-password"
-        />
+        <div>
+          <Input
+            id="password"
+            type="password"
+            label="Mot de passe"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            icon={<Lock size={16} />}
+            required
+            autoComplete="current-password"
+          />
+          <div className="flex justify-end mt-1.5">
+            <Link href="/forgot-password" className="text-xs text-violet-400 hover:text-violet-300">
+              Mot de passe oublié ?
+            </Link>
+          </div>
+        </div>
         {error && (
           <div className="px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
             {error}
