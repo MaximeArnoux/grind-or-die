@@ -75,7 +75,7 @@ function calcBedtimePoints(hours: number, minutes: number): number {
   if (hours >= 20) return 2                        // 20h–23h59 : avant minuit
   if (hours === 0 && minutes === 0) return 2       // exactement minuit
   if (hours === 0) return 0                        // 00h01–00h59
-  if (hours <= 2) return 0                         // 01h00–02h59
+  if (hours <= 2) return -2                         // 01h00–02h59
   return -4                                        // 03h00+
 }
 
