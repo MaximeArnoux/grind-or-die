@@ -5,10 +5,16 @@ export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
   const username = searchParams.get('username')
+  const next = searchParams.get('next')
 
   if (code) {
     const supabase = await createClient()
     await supabase.auth.exchangeCodeForSession(code)
+
+    // Flux de réinitialisation de mot de passe : session établie → page reset
+    if (next) {
+      return NextResponse.redirect(`${origin}${next}`)
+    }
 
     const { data: { user } } = await supabase.auth.getUser()
     if (user) {
