@@ -52,7 +52,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
               tabIndex={-1}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors"
             >
-              {show ? <EyeOff size={16} /> : <Eye size={16} />}
+              {show ? <Eye size={16} /> : <EyeOff size={16} />}
             </button>
           )}
         </div>
