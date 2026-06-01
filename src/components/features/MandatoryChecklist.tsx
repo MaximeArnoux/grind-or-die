@@ -5,29 +5,52 @@ import { CheckCircle2, Circle } from 'lucide-react'
 
 export async function MandatoryChecklist({ userId }: { userId: string }) {
   const supabase = await createClient()
-  const todayStart = new Date()
+  const nowParis = new Date(new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }))
+  const todayStart = new Date(nowParis)
   todayStart.setHours(0, 0, 0, 0)
 
   const { data: todayLogs } = await supabase
     .from('activity_logs')
-    .select('activity:activities(name, type)')
+    .select('notes, activity:activities(name, type, category:activity_categories(name))')
     .eq('user_id', userId)
     .gte('logged_at', todayStart.toISOString())
 
-  const loggedNames = (todayLogs ?? []).map((l: any) => l.activity?.name ?? '')
+  const logs = (todayLogs ?? []) as any[]
+  const loggedNames = logs.map(l => l.activity?.name ?? '')
+
+  // Trouve le log de sommeil et parse ses notes : "8h00 · couché à 23h30 · réveil à 7h30"
+  const sleepLog = logs.find(l => l.activity?.name === 'Sommeil')
+  let sleptEnough = false
+  let bedtimeOk = false
+  if (sleepLog?.notes) {
+    const notes: string = sleepLog.notes
+    // durée : premier "XhYY" au début
+    const durMatch = notes.match(/^(\d+)h(\d+)/)
+    if (durMatch) {
+      const durMinutes = parseInt(durMatch[1]) * 60 + parseInt(durMatch[2])
+      sleptEnough = durMinutes >= 7 * 60
+    }
+    // heure de coucher : après "couché à "
+    const bedMatch = notes.match(/couché à (\d+)h/)
+    if (bedMatch) {
+      const bh = parseInt(bedMatch[1])
+      // avant 1h du matin : soirée (>= 18h) ou exactement entre minuit et 00h59
+      bedtimeOk = bh >= 18 || bh === 0
+    }
+  }
 
   function isCompleted(mandatoryId: string): boolean {
     switch (mandatoryId) {
       case 'mandatory_water':
         return loggedNames.includes(MANDATORY_ACTIVITY_NAMES.mandatory_water)
       case 'mandatory_sleep':
-        return loggedNames.includes(MANDATORY_ACTIVITY_NAMES.mandatory_sleep)
+        return sleptEnough
       case 'mandatory_sleep_time':
-        return loggedNames.includes(MANDATORY_ACTIVITY_NAMES.mandatory_sleep_time)
+        return bedtimeOk
       case 'mandatory_no_junk':
         return !loggedNames.some(n => (MANDATORY_ACTIVITY_NAMES.mandatory_no_junk as string[]).includes(n))
       case 'mandatory_sport':
-        return loggedNames.some(n => (MANDATORY_ACTIVITY_NAMES.mandatory_sport as string[]).includes(n))
+        return logs.some(l => l.activity?.category?.name === 'Fitness')
       default:
         return false
     }
