@@ -7,6 +7,7 @@ import { fr } from 'date-fns/locale'
 import { toParisDate } from '@/lib/utils'
 import { WeightChartClient } from '@/components/features/WeightChartClient'
 import { ProfileLogsClient } from '@/components/features/ProfileLogsClient'
+import { ProfileObjectives } from '@/components/features/ProfileObjectives'
 import { ADMIN_USER_ID } from '@/lib/constants/admin'
 
 export default async function ProfilPage({ params }: { params: Promise<{ username: string }> }) {
@@ -82,6 +83,18 @@ export default async function ProfilPage({ params }: { params: Promise<{ usernam
   const objectives = objectivesRes.data ?? []
   const weightLogs = weightLogsRes.data ?? []
 
+  // Pour le formulaire d'ajout d'objectif (uniquement sur son propre profil)
+  let allActivities: any[] = []
+  let userGroups: { id: string; name: string }[] = []
+  if (isOwn) {
+    const [actsRes, groupsRes] = await Promise.all([
+      supabase.from('activities').select('id, name, emoji, type').order('name'),
+      supabase.from('group_members').select('group:groups!group_id(id, name)').eq('user_id', profile.id),
+    ])
+    allActivities = actsRes.data ?? []
+    userGroups = (groupsRes.data ?? []).map((m: any) => m.group).filter(Boolean)
+  }
+
   // Grouper les logs par jour Paris
   const allLogs = (recentLogsRes.data ?? []).map(l => ({
     id: l.id as string,
@@ -151,26 +164,13 @@ export default async function ProfilPage({ params }: { params: Promise<{ usernam
       </div>
 
       {/* Objectives */}
-      {objectives.length > 0 && (
-        <Card>
-          <CardHeader><CardTitle>Objectifs actifs</CardTitle></CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {objectives.map(obj => (
-                <div key={obj.id} className="flex items-center justify-between p-3 bg-gray-800 rounded-xl">
-                  <span className="text-sm text-white">
-                    {(obj.activity as any)?.emoji} {(obj.activity as any)?.name}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="violet">×{obj.multiplier}</Badge>
-                    <span className="text-xs text-gray-500">{obj.target_count}× / {obj.period === 'daily' ? 'jour' : 'semaine'}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <ProfileObjectives
+        objectives={objectives}
+        isOwn={isOwn}
+        userId={profile.id}
+        activities={allActivities}
+        userGroups={userGroups}
+      />
 
       {/* Weight chart */}
       {weightLogs.length >= 1 && (
