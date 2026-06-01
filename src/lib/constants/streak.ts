@@ -3,12 +3,6 @@ import type { MandatoryActivity } from '@/types'
 // Ces activités doivent toutes être complétées pour maintenir la série quotidienne
 export const MANDATORY_ACTIVITIES: MandatoryActivity[] = [
   {
-    id: 'mandatory_water',
-    name: '3L d\'eau',
-    emoji: '💧',
-    description: 'Boire au moins 3 litres d\'eau dans la journée',
-  },
-  {
     id: 'mandatory_sleep',
     name: '7h+ de sommeil',
     emoji: '😴',
