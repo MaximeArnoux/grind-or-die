@@ -16,7 +16,6 @@ const MOCK_RANKING = [
   { rank: 4, name: 'grindset_', pts: 175 },
   { rank: 5, name: 'beast_69', pts: 140 },
 ]
-
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-gray-950 flex">

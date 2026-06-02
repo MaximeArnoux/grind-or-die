@@ -274,7 +274,14 @@ export function GroupesClient({ groups, publicGroups, currentUserId }: { groups:
                             <p className={cn('text-sm font-black', isFirst ? 'text-yellow-400' : 'text-white')}>
                               {member.points} pts
                             </p>
-                            {/* Espace réservé pour le bouton retirer (garde l'alignement) */}
+                            <div className={cn(
+                              'rounded-t-lg w-14 flex items-center justify-center text-white font-black text-lg mt-1',
+                              isFirst ? 'bg-yellow-400/20 h-16' :
+                                member.rank === 2 ? 'bg-gray-500/20 h-12' : 'bg-amber-700/20 h-8'
+                            )}>
+                              {member.rank}
+                            </div>
+                            {/* Espace réservé pour le bouton retirer (garde l'alignement des marches) */}
                             <div className="h-5 flex items-center justify-center">
                               {group.created_by === currentUserId && member.user_id !== currentUserId && (
                                 <button
@@ -289,13 +296,6 @@ export function GroupesClient({ groups, publicGroups, currentUserId }: { groups:
                                   <UserMinus size={12} />
                                 </button>
                               )}
-                            </div>
-                            <div className={cn(
-                              'rounded-t-lg w-14 flex items-center justify-center text-white font-black text-lg',
-                              isFirst ? 'bg-yellow-400/20 h-16' :
-                                member.rank === 2 ? 'bg-gray-500/20 h-12' : 'bg-amber-700/20 h-8'
-                            )}>
-                              {member.rank}
                             </div>
                           </div>
                         )
