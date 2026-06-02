@@ -274,26 +274,29 @@ export function GroupesClient({ groups, publicGroups, currentUserId }: { groups:
                             <p className={cn('text-sm font-black', isFirst ? 'text-yellow-400' : 'text-white')}>
                               {member.points} pts
                             </p>
+                            {/* Espace réservé pour le bouton retirer (garde l'alignement) */}
+                            <div className="h-5 flex items-center justify-center">
+                              {group.created_by === currentUserId && member.user_id !== currentUserId && (
+                                <button
+                                  onClick={async () => {
+                                    setLoading(true)
+                                    const result = await removeMember(group.id, member.user_id)
+                                    setLoading(false)
+                                    if (result.error) setError(result.error)
+                                  }}
+                                  className="text-xs text-gray-600 hover:text-red-400 transition-colors"
+                                >
+                                  <UserMinus size={12} />
+                                </button>
+                              )}
+                            </div>
                             <div className={cn(
-                              'rounded-t-lg w-14 flex items-center justify-center text-white font-black text-lg mt-1',
+                              'rounded-t-lg w-14 flex items-center justify-center text-white font-black text-lg',
                               isFirst ? 'bg-yellow-400/20 h-16' :
                                 member.rank === 2 ? 'bg-gray-500/20 h-12' : 'bg-amber-700/20 h-8'
                             )}>
                               {member.rank}
                             </div>
-                            {group.created_by === currentUserId && member.user_id !== currentUserId && (
-                              <button
-                                onClick={async () => {
-                                  setLoading(true)
-                                  const result = await removeMember(group.id, member.user_id)
-                                  setLoading(false)
-                                  if (result.error) setError(result.error)
-                                }}
-                                className="text-xs text-gray-600 hover:text-red-400 transition-colors"
-                              >
-                                <UserMinus size={12} />
-                              </button>
-                            )}
                           </div>
                         )
                       })}
