@@ -13,6 +13,26 @@ export function toParisDate(dateStr: string | Date): Date {
   return new Date(d.toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }))
 }
 
+// Convertit une Date contenant l'heure murale de Paris (interprétée comme locale)
+// en instant UTC réel
+export function parisWallToUTC(wall: Date): Date {
+  const utcGuess = Date.UTC(
+    wall.getFullYear(), wall.getMonth(), wall.getDate(),
+    wall.getHours(), wall.getMinutes(), wall.getSeconds()
+  )
+  const tzStr = new Date(utcGuess).toLocaleString('en-US', { timeZone: 'Europe/Paris' })
+  const utcStr = new Date(utcGuess).toLocaleString('en-US', { timeZone: 'UTC' })
+  const offset = new Date(tzStr).getTime() - new Date(utcStr).getTime()
+  return new Date(utcGuess - offset)
+}
+
+// Instant UTC réel pour le début de la semaine Paris courante (lundi 00:00 Paris)
+export function parisWeekStartISO(): string {
+  const nowParis = new Date(new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }))
+  const wsWall = startOfWeek(nowParis, { weekStartsOn: 1 })
+  return parisWallToUTC(wsWall).toISOString()
+}
+
 export function formatPoints(points: number): string {
   if (points > 0) return `+${points}`
   return `${points}`

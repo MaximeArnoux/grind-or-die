@@ -1,15 +1,14 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { GroupesClient, type PublicGroup } from '@/components/features/GroupesClient'
-import { startOfWeek } from 'date-fns'
+import { parisWeekStartISO } from '@/lib/utils'
 
 export default async function GroupesPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const nowParis = new Date(new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }))
-  const weekStart = startOfWeek(nowParis, { weekStartsOn: 1 })
+  const weekStartISO = parisWeekStartISO()
 
   // Step 1: get the user's memberships (no join — avoids FK detection issues)
   const { data: memberships } = await supabase
@@ -62,7 +61,7 @@ export default async function GroupesPage() {
 
   const allMemberIds = [...new Set(allMembersData.flatMap((r: { data: any[] | null }) => (r.data ?? []).map((m: any) => m.user_id)))]
   const { data: allWeeklyLogs } = allMemberIds.length > 0
-    ? await supabase.from('activity_logs').select('user_id, points_earned').in('user_id', allMemberIds).gte('logged_at', weekStart.toISOString())
+    ? await supabase.from('activity_logs').select('user_id, points_earned').in('user_id', allMemberIds).gte('logged_at', weekStartISO)
     : { data: [] as { user_id: string; points_earned: number }[] }
 
   const totalsMap = new Map<string, number>()

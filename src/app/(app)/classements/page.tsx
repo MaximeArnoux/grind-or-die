@@ -1,8 +1,8 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { RankingsClient } from '@/components/features/RankingsClient'
-import { subDays, startOfWeek, format } from 'date-fns'
-import { toParisDate } from '@/lib/utils'
+import { subDays, format } from 'date-fns'
+import { toParisDate, parisWeekStartISO, parisWallToUTC } from '@/lib/utils'
 
 export default async function ClassementsPage() {
   const supabase = await createClient()
@@ -10,15 +10,16 @@ export default async function ClassementsPage() {
   if (!user) redirect('/login')
 
   const nowParis = new Date(new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }))
-  const weekStart = startOfWeek(nowParis, { weekStartsOn: 1 })
-  const sevenDaysAgo = subDays(nowParis, 6); sevenDaysAgo.setHours(0, 0, 0, 0)
+  const weekStartISO = parisWeekStartISO()
+  const sevenWall = subDays(nowParis, 6); sevenWall.setHours(0, 0, 0, 0)
+  const sevenDaysAgoISO = parisWallToUTC(sevenWall).toISOString()
 
   // All initial data in parallel
   const [weeklyLogsRes, lifetimeLogsRes, streakRes, groupMembershipsRes, chartLogsRes, weekActivitiesRes] = await Promise.all([
     supabase
       .from('activity_logs')
       .select('user_id, points_earned, profiles!inner(username, avatar_url)')
-      .gte('logged_at', weekStart.toISOString()),
+      .gte('logged_at', weekStartISO),
     supabase
       .from('activity_logs')
       .select('user_id, points_earned, profiles!inner(username, avatar_url)'),
@@ -35,12 +36,12 @@ export default async function ClassementsPage() {
       .from('activity_logs')
       .select('points_earned, logged_at')
       .eq('user_id', user.id)
-      .gte('logged_at', sevenDaysAgo.toISOString()),
+      .gte('logged_at', sevenDaysAgoISO),
     supabase
       .from('activity_logs')
       .select('id', { count: 'exact', head: true })
       .eq('user_id', user.id)
-      .gte('logged_at', weekStart.toISOString()),
+      .gte('logged_at', weekStartISO),
   ])
 
   function aggregateRanking(logs: any[]) {
@@ -120,7 +121,7 @@ export default async function ClassementsPage() {
     // Gather all unique member IDs across all groups, fetch logs in one query
     const allMemberIds = [...new Set(allMembersData.flatMap(r => (r.data ?? []).map((m: any) => m.user_id)))]
     const { data: allWeeklyLogs } = allMemberIds.length > 0
-      ? await supabase.from('activity_logs').select('user_id, points_earned').in('user_id', allMemberIds).gte('logged_at', weekStart.toISOString())
+      ? await supabase.from('activity_logs').select('user_id, points_earned').in('user_id', allMemberIds).gte('logged_at', weekStartISO)
       : { data: [] as { user_id: string; points_earned: number }[] }
 
     const totalsMap = new Map<string, number>()

@@ -3,11 +3,11 @@ import Link from 'next/link'
 import { Trophy, TrendingUp, Star, Users, ArrowRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
-import { formatPoints, formatTimeAgo, capitalizeFirst, cn, toParisDate } from '@/lib/utils'
+import { formatPoints, formatTimeAgo, capitalizeFirst, cn, toParisDate, parisWeekStartISO, parisWallToUTC } from '@/lib/utils'
 import { DashboardChart } from '@/components/features/DashboardChart'
 import { MandatoryChecklist } from '@/components/features/MandatoryChecklist'
 import { GroupChatClient } from '@/components/features/GroupChatClient'
-import { format, startOfWeek, subDays } from 'date-fns'
+import { format, subDays } from 'date-fns'
 import { fr } from 'date-fns/locale'
 
 type WeekLog = {
@@ -30,23 +30,25 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  // Use Paris timezone for all date boundaries
+  // Use Paris timezone for all date boundaries (instants UTC réels)
   const nowParis = new Date(new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }))
-  const weekStart = startOfWeek(nowParis, { weekStartsOn: 1 })
-  const todayStart = new Date(nowParis); todayStart.setHours(0, 0, 0, 0)
-  const sevenDaysAgo = subDays(nowParis, 6); sevenDaysAgo.setHours(0, 0, 0, 0)
+  const weekStartISO = parisWeekStartISO()
+  const todayWall = new Date(nowParis); todayWall.setHours(0, 0, 0, 0)
+  const todayStartISO = parisWallToUTC(todayWall).toISOString()
+  const sevenWall = subDays(nowParis, 6); sevenWall.setHours(0, 0, 0, 0)
+  const sevenDaysAgoISO = parisWallToUTC(sevenWall).toISOString()
 
   // Parallel data fetching
   const [profileRes, streakRes, totalPointsRes, weekPointsRes, todayPointsRes, recentLogsRes, myGroupMembershipsRes, chartLogsRes] = await Promise.all([
     supabase.from('profiles').select('username, avatar_url').eq('id', user.id).single(),
     supabase.from('user_streaks').select('current_streak').eq('user_id', user.id).single(),
     supabase.from('activity_logs').select('points_earned').eq('user_id', user.id),
-    supabase.from('activity_logs').select('points_earned, activity:activities(type)').eq('user_id', user.id).gte('logged_at', weekStart.toISOString()),
-    supabase.from('activity_logs').select('points_earned').eq('user_id', user.id).gte('logged_at', todayStart.toISOString()),
+    supabase.from('activity_logs').select('points_earned, activity:activities(type)').eq('user_id', user.id).gte('logged_at', weekStartISO),
+    supabase.from('activity_logs').select('points_earned').eq('user_id', user.id).gte('logged_at', todayStartISO),
     supabase.from('activity_logs').select('id, points_earned, logged_at, activity:activities(name, emoji)').eq('user_id', user.id).order('logged_at', { ascending: false }).limit(5),
     supabase.from('group_members').select('group_id, role, group:groups(id, name)').eq('user_id', user.id),
     // Single query for last 7 days chart data
-    supabase.from('activity_logs').select('points_earned, logged_at').eq('user_id', user.id).gte('logged_at', sevenDaysAgo.toISOString()),
+    supabase.from('activity_logs').select('points_earned, logged_at').eq('user_id', user.id).gte('logged_at', sevenDaysAgoISO),
   ])
 
   const profile = profileRes.data
@@ -85,7 +87,7 @@ export default async function DashboardPage() {
     // Run member_logs + msg_profiles in parallel
     const [logsRes, msgProfilesRes] = await Promise.all([
       memberIds.length > 0
-        ? supabase.from('activity_logs').select('user_id, points_earned').in('user_id', memberIds).gte('logged_at', weekStart.toISOString())
+        ? supabase.from('activity_logs').select('user_id, points_earned').in('user_id', memberIds).gte('logged_at', weekStartISO)
         : Promise.resolve({ data: [] as { user_id: string; points_earned: number }[] }),
       uniqueUserIds.length > 0
         ? supabase.from('profiles').select('id, username, avatar_url').in('id', uniqueUserIds)
