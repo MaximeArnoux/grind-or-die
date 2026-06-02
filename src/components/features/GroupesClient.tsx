@@ -274,6 +274,13 @@ export function GroupesClient({ groups, publicGroups, currentUserId }: { groups:
                             <p className={cn('text-sm font-black', isFirst ? 'text-yellow-400' : 'text-white')}>
                               {member.points} pts
                             </p>
+                            <div className={cn(
+                              'rounded-t-lg w-14 flex items-center justify-center text-white font-black text-lg mt-1',
+                              isFirst ? 'bg-yellow-400/20 h-16' :
+                                member.rank === 2 ? 'bg-gray-500/20 h-12' : 'bg-amber-700/20 h-8'
+                            )}>
+                              {member.rank}
+                            </div>
                             {group.created_by === currentUserId && member.user_id !== currentUserId && (
                               <button
                                 onClick={async () => {

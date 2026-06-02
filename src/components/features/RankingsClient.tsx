@@ -146,6 +146,13 @@ export function RankingsClient({ weeklyRanking, lifetimeRanking, chartData, week
                                 <p className={cn('text-sm font-black', isFirst ? 'text-yellow-400' : 'text-white')}>
                                   {entry.points} pts
                                 </p>
+                                <div className={cn(
+                                  'rounded-t-lg w-14 flex items-center justify-center text-white font-black text-lg mt-1',
+                                  entry.rank === 1 ? 'bg-yellow-400/20 h-16' :
+                                    entry.rank === 2 ? 'bg-gray-500/20 h-12' : 'bg-amber-700/20 h-8'
+                                )}>
+                                  {entry.rank}
+                                </div>
                               </div>
                             )
                           })}
