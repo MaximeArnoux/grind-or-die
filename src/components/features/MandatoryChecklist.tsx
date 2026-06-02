@@ -3,19 +3,24 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { MANDATORY_ACTIVITIES, MANDATORY_ACTIVITY_NAMES } from '@/lib/constants/streak'
 import { CheckCircle2, Circle } from 'lucide-react'
 import { ObjectiveDeleteButton } from './ObjectiveDeleteButton'
+import { parisWallToUTC } from '@/lib/utils'
+
+const DAILY_BONUS_ACTIVITY = 'Objectif du jour réussi'
+const DAILY_BONUS_MIN_OBJECTIVES = 6
 
 export async function MandatoryChecklist({ userId }: { userId: string }) {
   const supabase = await createClient()
   const nowParis = new Date(new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }))
   const todayStart = new Date(nowParis)
   todayStart.setHours(0, 0, 0, 0)
+  const todayStartISO = parisWallToUTC(todayStart).toISOString()
 
   const [todayLogsRes, objectivesRes] = await Promise.all([
     supabase
       .from('activity_logs')
       .select('activity_id, notes, activity:activities(name, type, category:activity_categories(name))')
       .eq('user_id', userId)
-      .gte('logged_at', todayStart.toISOString()),
+      .gte('logged_at', todayStartISO),
     supabase
       .from('user_objectives')
       .select('id, activity_id, target_count, period, activity:activities(name, emoji)')
@@ -90,6 +95,43 @@ export async function MandatoryChecklist({ userId }: { userId: string }) {
   const completedCount = fixedCompleted + objCompleted
   const totalCount = MANDATORY_ACTIVITIES.length + dailyObjectives.length
 
+  // Bonus +2 si TOUS les objectifs validés ET au moins 6 objectifs au total
+  const allDone = totalCount > 0 && completedCount === totalCount
+  const bonusEligible = allDone && totalCount >= DAILY_BONUS_MIN_OBJECTIVES
+  let bonusAwarded = false
+
+  if (bonusEligible) {
+    // Récupère l'activité bonus + vérifie qu'elle n'a pas déjà été attribuée aujourd'hui
+    const { data: bonusActivity } = await supabase
+      .from('activities')
+      .select('id')
+      .eq('name', DAILY_BONUS_ACTIVITY)
+      .maybeSingle()
+
+    if (bonusActivity) {
+      const { data: existingBonus } = await supabase
+        .from('activity_logs')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('activity_id', bonusActivity.id)
+        .gte('logged_at', todayStartISO)
+        .maybeSingle()
+
+      if (!existingBonus) {
+        await supabase.from('activity_logs').insert({
+          user_id: userId,
+          activity_id: bonusActivity.id,
+          points_earned: 2,
+          multiplier: 1,
+          notes: 'Objectif du jour réussi, Bravo !',
+        })
+        bonusAwarded = true
+      } else {
+        bonusAwarded = true
+      }
+    }
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -155,9 +197,11 @@ export async function MandatoryChecklist({ userId }: { userId: string }) {
             </div>
           ))}
         </div>
-        {completedCount === totalCount && totalCount > 0 && (
+        {allDone && (
           <div className="mt-4 p-3 bg-green-500/10 border border-green-500/20 rounded-xl text-center">
-            <p className="text-green-400 font-semibold text-sm">🔥 Série maintenue ! Bien joué !</p>
+            <p className="text-green-400 font-semibold text-sm">
+              {bonusAwarded ? '🏆 Tous les objectifs validés ! +2 points bonus 🔥' : '🔥 Série maintenue ! Bien joué !'}
+            </p>
           </div>
         )}
       </CardContent>
