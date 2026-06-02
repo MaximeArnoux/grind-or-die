@@ -15,7 +15,7 @@ export default async function ClassementsPage() {
   const sevenDaysAgoISO = parisWallToUTC(sevenWall).toISOString()
 
   // All initial data in parallel
-  const [weeklyLogsRes, lifetimeLogsRes, streakRes, groupMembershipsRes, chartLogsRes, weekActivitiesRes] = await Promise.all([
+  const [weeklyLogsRes, lifetimeLogsRes, streakRes, groupMembershipsRes, chartLogsRes, weekActivitiesRes, allProfilesRes] = await Promise.all([
     supabase
       .from('activity_logs')
       .select('user_id, points_earned, profiles!inner(username, avatar_url)')
@@ -42,10 +42,19 @@ export default async function ClassementsPage() {
       .select('id', { count: 'exact', head: true })
       .eq('user_id', user.id)
       .gte('logged_at', weekStartISO),
+    supabase
+      .from('profiles')
+      .select('id, username, avatar_url'),
   ])
+
+  const allProfiles = allProfilesRes.data ?? []
 
   function aggregateRanking(logs: any[]) {
     const totals = new Map<string, { points: number; username: string; avatar_url: string | null }>()
+    // Initialise tous les membres de l'app à 0 point
+    for (const p of allProfiles) {
+      totals.set(p.id, { points: 0, username: p.username ?? '?', avatar_url: p.avatar_url ?? null })
+    }
     for (const log of logs) {
       const uid = log.user_id
       const existing = totals.get(uid)

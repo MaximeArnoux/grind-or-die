@@ -38,14 +38,14 @@ interface Props {
 }
 
 const TABS = ['Groupe', 'National', 'Historique']
-const TIMEFRAMES = ['Hebdo', 'Lifetime']
+const TIMEFRAMES = ['Weekly', 'Lifetime']
 
 export function RankingsClient({ weeklyRanking, lifetimeRanking, chartData, weekSummary, currentUserId, userGroups, groupRankings }: Props) {
   const [tab, setTab] = useState(userGroups.length > 0 ? 'Groupe' : 'National')
-  const [timeframe, setTimeframe] = useState('Hebdo')
+  const [timeframe, setTimeframe] = useState('Weekly')
   const [selectedGroupId, setSelectedGroupId] = useState<string>(userGroups[0]?.id ?? '')
 
-  const ranking = timeframe === 'Hebdo' ? weeklyRanking : lifetimeRanking
+  const ranking = timeframe === 'Weekly' ? weeklyRanking : lifetimeRanking
   const top3 = ranking.slice(0, 3)
   const rest = ranking.slice(3)
   const podiumOrder = top3.length >= 3 ? [top3[1], top3[0], top3[2]] : top3
@@ -225,7 +225,7 @@ export function RankingsClient({ weeklyRanking, lifetimeRanking, chartData, week
                       if (!entry) return null
                       const isFirst = entry.rank === 1
                       return (
-                        <div key={entry.user_id} className={cn('flex flex-col items-center gap-2', isFirst && 'order-2')}>
+                        <div key={entry.user_id} className="flex flex-col items-center gap-2">
                           {isFirst && <span className="text-2xl">👑</span>}
                           <Link href={`/profil/${encodeURIComponent(entry.username)}`} className="flex flex-col items-center gap-2 group">
                             <div className={cn(
