@@ -7,7 +7,7 @@ import { formatPoints, formatTimeAgo, capitalizeFirst, cn, toParisDate, parisWee
 import { DashboardChart } from '@/components/features/DashboardChart'
 import { MandatoryChecklist } from '@/components/features/MandatoryChecklist'
 import { GroupChatClient } from '@/components/features/GroupChatClient'
-import { format, subDays } from 'date-fns'
+import { format, subDays, startOfWeek } from 'date-fns'
 import { fr } from 'date-fns/locale'
 
 type WeekLog = {
@@ -37,9 +37,12 @@ export default async function DashboardPage() {
   const todayStartISO = parisWallToUTC(todayWall).toISOString()
   const sevenWall = subDays(nowParis, 6); sevenWall.setHours(0, 0, 0, 0)
   const sevenDaysAgoISO = parisWallToUTC(sevenWall).toISOString()
+  // Semaine précédente (pour le % d'évolution)
+  const prevWeekWall = startOfWeek(subDays(nowParis, 7), { weekStartsOn: 1 })
+  const prevWeekStartISO = parisWallToUTC(prevWeekWall).toISOString()
 
   // Parallel data fetching
-  const [profileRes, streakRes, totalPointsRes, weekPointsRes, todayPointsRes, recentLogsRes, myGroupMembershipsRes, chartLogsRes] = await Promise.all([
+  const [profileRes, streakRes, totalPointsRes, weekPointsRes, todayPointsRes, recentLogsRes, myGroupMembershipsRes, chartLogsRes, lastWeekPointsRes] = await Promise.all([
     supabase.from('profiles').select('username, avatar_url').eq('id', user.id).single(),
     supabase.from('user_streaks').select('current_streak').eq('user_id', user.id).single(),
     supabase.from('activity_logs').select('points_earned').eq('user_id', user.id),
@@ -49,6 +52,8 @@ export default async function DashboardPage() {
     supabase.from('group_members').select('group_id, role, group:groups(id, name)').eq('user_id', user.id),
     // Single query for last 7 days chart data
     supabase.from('activity_logs').select('points_earned, logged_at').eq('user_id', user.id).gte('logged_at', sevenDaysAgoISO),
+    // Points de la semaine précédente
+    supabase.from('activity_logs').select('points_earned').eq('user_id', user.id).gte('logged_at', prevWeekStartISO).lt('logged_at', weekStartISO),
   ])
 
   const profile = profileRes.data
@@ -56,6 +61,19 @@ export default async function DashboardPage() {
 
   const totalPoints = (totalPointsRes.data ?? []).reduce((sum, l) => sum + l.points_earned, 0)
   const weekPoints = (weekPointsRes.data ?? []).reduce((sum, l) => sum + l.points_earned, 0)
+  const lastWeekPoints = (lastWeekPointsRes.data ?? []).reduce((sum, l) => sum + l.points_earned, 0)
+
+  // % d'évolution vs semaine dernière
+  let weekTrend: string | undefined
+  let weekTrendUp = true
+  if (lastWeekPoints !== 0) {
+    const pct = Math.round(((weekPoints - lastWeekPoints) / Math.abs(lastWeekPoints)) * 100)
+    weekTrend = `${pct >= 0 ? '+' : ''}${pct}%`
+    weekTrendUp = pct >= 0
+  } else if (weekPoints > 0) {
+    weekTrend = 'Nouveau'
+    weekTrendUp = true
+  }
   const todayPoints = (todayPointsRes.data ?? []).reduce((sum, l) => sum + l.points_earned, 0)
   const recentLogs = recentLogsRes.data ?? []
 
@@ -170,8 +188,8 @@ export default async function DashboardPage() {
           label="Points cette semaine"
           value={weekPoints.toLocaleString('fr-FR')}
           icon={<TrendingUp size={22} className="text-green-400" />}
-          trend="+12%"
-          trendUp
+          trend={weekTrend}
+          trendUp={weekTrendUp}
         />
         <StatCard
           label="Points aujourd'hui"
