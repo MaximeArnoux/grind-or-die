@@ -37,9 +37,10 @@ export default async function DashboardPage() {
   const todayStartISO = parisWallToUTC(todayWall).toISOString()
   const sevenWall = subDays(nowParis, 6); sevenWall.setHours(0, 0, 0, 0)
   const sevenDaysAgoISO = parisWallToUTC(sevenWall).toISOString()
-  // Semaine précédente (pour le % d'évolution)
+  // Semaine précédente, même portion écoulée (pour le % d'évolution)
   const prevWeekWall = startOfWeek(subDays(nowParis, 7), { weekStartsOn: 1 })
   const prevWeekStartISO = parisWallToUTC(prevWeekWall).toISOString()
+  const nowMinus7ISO = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
 
   // Parallel data fetching
   const [profileRes, streakRes, totalPointsRes, weekPointsRes, todayPointsRes, recentLogsRes, myGroupMembershipsRes, chartLogsRes, lastWeekPointsRes] = await Promise.all([
@@ -52,8 +53,8 @@ export default async function DashboardPage() {
     supabase.from('group_members').select('group_id, role, group:groups(id, name)').eq('user_id', user.id),
     // Single query for last 7 days chart data
     supabase.from('activity_logs').select('points_earned, logged_at').eq('user_id', user.id).gte('logged_at', sevenDaysAgoISO),
-    // Points de la semaine précédente
-    supabase.from('activity_logs').select('points_earned').eq('user_id', user.id).gte('logged_at', prevWeekStartISO).lt('logged_at', weekStartISO),
+    // Points de la semaine précédente, même portion écoulée (lundi → même jour/heure -7j)
+    supabase.from('activity_logs').select('points_earned').eq('user_id', user.id).gte('logged_at', prevWeekStartISO).lt('logged_at', nowMinus7ISO),
   ])
 
   const profile = profileRes.data
