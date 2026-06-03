@@ -37,13 +37,14 @@ export default async function DashboardPage() {
   const todayStartISO = parisWallToUTC(todayWall).toISOString()
   const sevenWall = subDays(nowParis, 6); sevenWall.setHours(0, 0, 0, 0)
   const sevenDaysAgoISO = parisWallToUTC(sevenWall).toISOString()
-  // Semaine précédente, même portion écoulée (pour le % d'évolution)
+  // Comparaison "jours terminés" (on exclut le jour en cours) :
+  // cette semaine [lundi 00h → aujourd'hui 00h] vs semaine dernière [lundi 00h → même jour 00h -7j]
   const prevWeekWall = startOfWeek(subDays(nowParis, 7), { weekStartsOn: 1 })
   const prevWeekStartISO = parisWallToUTC(prevWeekWall).toISOString()
-  const nowMinus7ISO = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+  const prevTodayStartISO = new Date(new Date(todayStartISO).getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()
 
   // Parallel data fetching
-  const [profileRes, streakRes, totalPointsRes, weekPointsRes, todayPointsRes, recentLogsRes, myGroupMembershipsRes, chartLogsRes, lastWeekPointsRes] = await Promise.all([
+  const [profileRes, streakRes, totalPointsRes, weekPointsRes, todayPointsRes, recentLogsRes, myGroupMembershipsRes, chartLogsRes, thisWeekDoneRes, lastWeekDoneRes] = await Promise.all([
     supabase.from('profiles').select('username, avatar_url').eq('id', user.id).single(),
     supabase.from('user_streaks').select('current_streak').eq('user_id', user.id).single(),
     supabase.from('activity_logs').select('points_earned').eq('user_id', user.id),
@@ -53,8 +54,10 @@ export default async function DashboardPage() {
     supabase.from('group_members').select('group_id, role, group:groups(id, name)').eq('user_id', user.id),
     // Single query for last 7 days chart data
     supabase.from('activity_logs').select('points_earned, logged_at').eq('user_id', user.id).gte('logged_at', sevenDaysAgoISO),
-    // Points de la semaine précédente, même portion écoulée (lundi → même jour/heure -7j)
-    supabase.from('activity_logs').select('points_earned').eq('user_id', user.id).gte('logged_at', prevWeekStartISO).lt('logged_at', nowMinus7ISO),
+    // Jours terminés cette semaine (lundi → aujourd'hui 00h, hors jour en cours)
+    supabase.from('activity_logs').select('points_earned').eq('user_id', user.id).gte('logged_at', weekStartISO).lt('logged_at', todayStartISO),
+    // Mêmes jours terminés la semaine dernière
+    supabase.from('activity_logs').select('points_earned').eq('user_id', user.id).gte('logged_at', prevWeekStartISO).lt('logged_at', prevTodayStartISO),
   ])
 
   const profile = profileRes.data
@@ -62,16 +65,17 @@ export default async function DashboardPage() {
 
   const totalPoints = (totalPointsRes.data ?? []).reduce((sum, l) => sum + l.points_earned, 0)
   const weekPoints = (weekPointsRes.data ?? []).reduce((sum, l) => sum + l.points_earned, 0)
-  const lastWeekPoints = (lastWeekPointsRes.data ?? []).reduce((sum, l) => sum + l.points_earned, 0)
+  const thisWeekDone = (thisWeekDoneRes.data ?? []).reduce((sum, l) => sum + l.points_earned, 0)
+  const lastWeekDone = (lastWeekDoneRes.data ?? []).reduce((sum, l) => sum + l.points_earned, 0)
 
-  // % d'évolution vs semaine dernière
+  // % d'évolution : jours terminés cette semaine vs mêmes jours la semaine dernière
   let weekTrend: string | undefined
   let weekTrendUp = true
-  if (lastWeekPoints !== 0) {
-    const pct = Math.round(((weekPoints - lastWeekPoints) / Math.abs(lastWeekPoints)) * 100)
+  if (lastWeekDone !== 0) {
+    const pct = Math.round(((thisWeekDone - lastWeekDone) / Math.abs(lastWeekDone)) * 100)
     weekTrend = `${pct >= 0 ? '+' : ''}${pct}%`
     weekTrendUp = pct >= 0
-  } else if (weekPoints > 0) {
+  } else if (thisWeekDone > 0) {
     weekTrend = 'Nouveau'
     weekTrendUp = true
   }
