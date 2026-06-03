@@ -50,10 +50,9 @@ export default async function ProfilPage({ params }: { params: Promise<{ usernam
   const threeDaysAgo = subDays(nowParis, 2)
   threeDaysAgo.setHours(0, 0, 0, 0)
 
-  const [totalPointsRes, weekPointsRes, streakRes, objectivesRes, weightLogsRes, recentLogsRes] = await Promise.all([
+  const [totalPointsRes, weekPointsRes, objectivesRes, weightLogsRes, recentLogsRes] = await Promise.all([
     supabase.from('activity_logs').select('points_earned, logged_at').eq('user_id', profile.id),
     supabase.from('activity_logs').select('points_earned').eq('user_id', profile.id).gte('logged_at', weekStart.toISOString()),
-    supabase.from('user_streaks').select('*').eq('user_id', profile.id).single(),
     supabase.from('user_objectives').select('*, activity:activities(name, emoji)').eq('user_id', profile.id).eq('is_active', true),
     supabase.from('weight_logs').select('*').eq('user_id', profile.id).order('logged_at').limit(30),
     supabase.from('activity_logs')
@@ -66,7 +65,6 @@ export default async function ProfilPage({ params }: { params: Promise<{ usernam
   const allTimeLogs = totalPointsRes.data ?? []
   const totalPoints = allTimeLogs.reduce((sum, l) => sum + l.points_earned, 0)
   const weekPoints = (weekPointsRes.data ?? []).reduce((sum, l) => sum + l.points_earned, 0)
-  const streak = streakRes.data
 
   // Meilleur jour : grouper par jour Paris et trouver le max
   const dayTotals = new Map<string, number>()
@@ -80,6 +78,13 @@ export default async function ProfilPage({ params }: { params: Promise<{ usernam
     if (pts > bestDayPoints) { bestDayPoints = pts; bestDayDate = date }
   }
   const bestDayLabel = bestDayPoints > 0 ? `+${bestDayPoints} pts` : '—'
+
+  // Moyenne de points journaliers depuis l'inscription
+  const signupDate = new Date(profile.created_at)
+  const daysSinceSignup = Math.max(1, Math.ceil((nowParis.getTime() - signupDate.getTime()) / (1000 * 60 * 60 * 24)))
+  const avgDaily = totalPoints / daysSinceSignup
+  const avgDailyLabel = `${avgDaily >= 0 ? '+' : ''}${avgDaily.toFixed(1)} pts`
+
   const objectives = objectivesRes.data ?? []
   const weightLogs = weightLogsRes.data ?? []
 
@@ -159,7 +164,7 @@ export default async function ProfilPage({ params }: { params: Promise<{ usernam
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <StatCard label="Points totaux" value={totalPoints.toLocaleString('fr-FR')} />
         <StatCard label="Cette semaine" value={`+${weekPoints}`} color="text-green-400" />
-        <StatCard label="Série actuelle" value={`${streak?.current_streak ?? 0} 🔥`} />
+        <StatCard label="Moyenne / jour 📊" value={avgDailyLabel} color="text-blue-400" />
         <StatCard label="Meilleur jour ⭐" value={bestDayLabel} color="text-yellow-400" />
       </div>
 
