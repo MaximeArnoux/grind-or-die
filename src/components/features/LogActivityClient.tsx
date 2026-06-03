@@ -10,7 +10,8 @@ import { Modal } from '@/components/ui/Modal'
 import { Input } from '@/components/ui/Input'
 import type { Activity, UserObjective } from '@/types'
 import { formatPoints, cn } from '@/lib/utils'
-import { ACTIVITY_CATEGORIES } from '@/lib/constants/activities'
+import { ACTIVITY_CATEGORIES, ACTIVITY_DESCRIPTIONS } from '@/lib/constants/activities'
+import { InfoTooltip } from '@/components/ui/InfoTooltip'
 
 const SPORT_ACTIVITIES = ['Course à pied', 'Vélo', 'Natation', 'Salle de sport', 'Street workout', 'Pompes', 'Pas']
 const SLEEP_ACTIVITY = 'Sommeil'
@@ -558,7 +559,10 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
               <div className="flex items-center gap-3">
                 <span className="text-xl">{activity.emoji}</span>
                 <div>
-                  <p className={cn('text-sm font-medium', atLimit ? 'text-gray-500' : 'text-white')}>{activity.name}</p>
+                  <div className="flex items-center gap-1.5">
+                    <p className={cn('text-sm font-medium', atLimit ? 'text-gray-500' : 'text-white')}>{activity.name}</p>
+                    {ACTIVITY_DESCRIPTIONS[activity.name] && <InfoTooltip text={ACTIVITY_DESCRIPTIONS[activity.name]} />}
+                  </div>
                   <p className="text-xs text-gray-500">
                     {atLimit ? 'Limite atteinte pour ajd' : activity.category?.name}
                   </p>
