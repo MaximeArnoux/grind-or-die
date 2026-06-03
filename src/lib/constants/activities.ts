@@ -58,7 +58,6 @@ export const DEFAULT_ACTIVITIES = [
   { name: 'Veille marché', emoji: '📊', points: 2, type: 'positive', category: 'Entrepreneuriat', can_repeat_daily: false, max_per_day: 1 },
   { name: 'Revenue généré', emoji: '💰', points: 10, type: 'bonus', category: 'Entrepreneuriat', can_repeat_daily: true, max_per_day: 100 },
   { name: '5 cold emails envoyés', emoji: '📧', points: 3, type: 'positive', category: 'Entrepreneuriat', can_repeat_daily: false, max_per_day: 1 },
-  { name: 'Objectif du jour accompli', emoji: '✅', points: 5, type: 'bonus', category: 'Entrepreneuriat', can_repeat_daily: false, max_per_day: 1 },
 ]
 
 export const CATEGORY_COLORS: Record<string, string> = {

@@ -100,8 +100,7 @@ export async function MandatoryChecklist({ userId }: { userId: string }) {
   const bonusEligible = allDone && totalCount >= DAILY_BONUS_MIN_OBJECTIVES
   let bonusAwarded = false
 
-  if (bonusEligible) {
-    // Récupère l'activité bonus + vérifie qu'elle n'a pas déjà été attribuée aujourd'hui
+  {
     const { data: bonusActivity } = await supabase
       .from('activities')
       .select('id')
@@ -117,17 +116,21 @@ export async function MandatoryChecklist({ userId }: { userId: string }) {
         .gte('logged_at', todayStartISO)
         .maybeSingle()
 
-      if (!existingBonus) {
-        await supabase.from('activity_logs').insert({
-          user_id: userId,
-          activity_id: bonusActivity.id,
-          points_earned: 2,
-          multiplier: 1,
-          notes: 'Objectif du jour réussi, Bravo !',
-        })
+      if (bonusEligible) {
+        // Tous les objectifs cochés (et ≥6) → ajoute le bonus s'il n'existe pas
+        if (!existingBonus) {
+          await supabase.from('activity_logs').insert({
+            user_id: userId,
+            activity_id: bonusActivity.id,
+            points_earned: 2,
+            multiplier: 1,
+            notes: 'Objectif du jour réussi, Bravo !',
+          })
+        }
         bonusAwarded = true
-      } else {
-        bonusAwarded = true
+      } else if (existingBonus) {
+        // Un objectif décoché → retire le bonus du jour
+        await supabase.from('activity_logs').delete().eq('id', existingBonus.id)
       }
     }
   }

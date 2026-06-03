@@ -15,6 +15,8 @@ import { ACTIVITY_CATEGORIES } from '@/lib/constants/activities'
 const SPORT_ACTIVITIES = ['Course à pied', 'Vélo', 'Natation', 'Salle de sport', 'Street workout', 'Pompes', 'Pas']
 const SLEEP_ACTIVITY = 'Sommeil'
 const SPECIAL_ACTIVITIES = ['Jeux vidéo', 'Réseaux sociaux']
+// Activités gérées automatiquement — jamais affichées dans la grille
+const HIDDEN_ACTIVITIES = ['Objectif du jour accompli', 'Objectif du jour réussi']
 
 type SportDiscipline = 'course' | 'velo' | 'natation' | 'salle' | 'street' | 'pompes' | 'pas'
 
@@ -178,6 +180,7 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
       const cat = a.category?.name
       if (cat === 'Fitness' || cat === 'Sommeil') return false
       if (SPECIAL_ACTIVITIES.includes(a.name)) return false
+      if (HIDDEN_ACTIVITIES.includes(a.name)) return false
       const key = a.name.trim().toLowerCase()
       if (seen.has(key)) return false
       seen.add(key)
