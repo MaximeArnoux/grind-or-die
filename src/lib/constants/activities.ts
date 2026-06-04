@@ -74,6 +74,7 @@ export const ACTIVITY_DESCRIPTIONS: Record<string, string> = {
   'Compléments alimentaires': 'Vitamines, protéines…',
   'Deliveroo': 'Commande de livraison · malus',
   'Cheat meal': 'Repas plaisir non sain · malus',
+  '11h30-13h30 / 19h00-22h00': 'Malus si heure de repas non respectée',
   'Sommeil': 'Points selon durée, heure de coucher et de réveil',
   'Réviser 2h': '+4 pts par session de révision',
   'Cours en ligne': '+3 pts par cours suivi',
