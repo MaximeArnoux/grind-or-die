@@ -33,7 +33,7 @@ export async function enablePush(): Promise<{ ok: boolean; error?: string }> {
   const existing = await reg.pushManager.getSubscription()
   const sub = existing ?? await reg.pushManager.subscribe({
     userVisibleOnly: true,
-    applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC),
+    applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC) as BufferSource,
   })
 
   const result = await savePushSubscription(JSON.parse(JSON.stringify(sub)))
