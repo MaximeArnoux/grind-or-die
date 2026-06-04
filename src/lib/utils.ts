@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
-import { format, isToday, isYesterday, startOfWeek, endOfWeek, parseISO } from 'date-fns'
+import { format, isToday, isYesterday, startOfWeek, endOfWeek, parseISO, subDays, addDays } from 'date-fns'
 import { fr } from 'date-fns/locale'
 
 export function cn(...inputs: ClassValue[]) {
@@ -31,6 +31,19 @@ export function parisWeekStartISO(): string {
   const nowParis = new Date(new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }))
   const wsWall = startOfWeek(nowParis, { weekStartsOn: 1 })
   return parisWallToUTC(wsWall).toISOString()
+}
+
+// Plage UTC + libellé pour une semaine Paris, décalée de `weeksAgo` semaines dans le passé
+export function parisWeekRange(weeksAgo: number): { startISO: string; endISO: string; label: string } {
+  const nowParis = new Date(new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }))
+  const wsWall = startOfWeek(subDays(nowParis, weeksAgo * 7), { weekStartsOn: 1 })
+  const weWall = addDays(wsWall, 7) // borne de fin exclusive = lundi suivant
+  const lastDay = addDays(wsWall, 6)
+  return {
+    startISO: parisWallToUTC(wsWall).toISOString(),
+    endISO: parisWallToUTC(weWall).toISOString(),
+    label: `Semaine du ${format(wsWall, 'd MMM', { locale: fr })} au ${format(lastDay, 'd MMM', { locale: fr })}`,
+  }
 }
 
 export function formatPoints(points: number): string {

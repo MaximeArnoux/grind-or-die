@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
-import { Trophy, TrendingUp, Zap, Flame, Crown, Users } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Trophy, TrendingUp, Zap, Flame, Crown, Users, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { DashboardChart } from './DashboardChart'
-import { cn } from '@/lib/utils'
+import { cn, parisWeekRange } from '@/lib/utils'
+import { getWeeklyRanking } from '@/app/(app)/classements/actions'
 import Link from 'next/link'
 
 interface RankingEntry {
@@ -45,15 +46,69 @@ export function RankingsClient({ weeklyRanking, lifetimeRanking, chartData, week
   const [timeframe, setTimeframe] = useState('Weekly')
   const [selectedGroupId, setSelectedGroupId] = useState<string>(userGroups[0]?.id ?? '')
 
-  const ranking = timeframe === 'Weekly' ? weeklyRanking : lifetimeRanking
+  // Navigation par semaine (0 = semaine en cours, 1 = semaine dernière, ...)
+  const [groupWeeksAgo, setGroupWeeksAgo] = useState(0)
+  const [natWeeksAgo, setNatWeeksAgo] = useState(0)
+  const [fetchedGroup, setFetchedGroup] = useState<RankingEntry[] | null>(null)
+  const [fetchedNat, setFetchedNat] = useState<RankingEntry[] | null>(null)
+  const [loadingWeek, setLoadingWeek] = useState(false)
+
+  const currentGroupRanking = groupRankings.find(g => g.groupId === selectedGroupId)
+
+  // Récupère le classement groupe d'une semaine passée
+  useEffect(() => {
+    if (groupWeeksAgo === 0 || !selectedGroupId) { setFetchedGroup(null); return }
+    let cancelled = false
+    setLoadingWeek(true)
+    getWeeklyRanking(groupWeeksAgo, selectedGroupId).then(r => {
+      if (!cancelled) { setFetchedGroup(r); setLoadingWeek(false) }
+    })
+    return () => { cancelled = true }
+  }, [groupWeeksAgo, selectedGroupId])
+
+  // Récupère le classement national d'une semaine passée
+  useEffect(() => {
+    if (natWeeksAgo === 0) { setFetchedNat(null); return }
+    let cancelled = false
+    setLoadingWeek(true)
+    getWeeklyRanking(natWeeksAgo, null).then(r => {
+      if (!cancelled) { setFetchedNat(r); setLoadingWeek(false) }
+    })
+    return () => { cancelled = true }
+  }, [natWeeksAgo])
+
+  // Données affichées selon la semaine choisie
+  const groupRankingData = groupWeeksAgo === 0 ? (currentGroupRanking?.ranking ?? []) : (fetchedGroup ?? [])
+  const groupTop3 = groupRankingData.slice(0, 3)
+  const groupPodium = groupTop3.length >= 3 ? [groupTop3[1], groupTop3[0], groupTop3[2]] : groupTop3
+  const groupRest = groupRankingData.slice(3)
+
+  const nationalWeekly = natWeeksAgo === 0 ? weeklyRanking : (fetchedNat ?? [])
+  const ranking = timeframe === 'Weekly' ? nationalWeekly : lifetimeRanking
   const top3 = ranking.slice(0, 3)
   const rest = ranking.slice(3)
   const podiumOrder = top3.length >= 3 ? [top3[1], top3[0], top3[2]] : top3
 
-  const currentGroupRanking = groupRankings.find(g => g.groupId === selectedGroupId)
-  const groupTop3 = currentGroupRanking?.ranking.slice(0, 3) ?? []
-  const groupPodium = groupTop3.length >= 3 ? [groupTop3[1], groupTop3[0], groupTop3[2]] : groupTop3
-  const groupRest = currentGroupRanking?.ranking.slice(3) ?? []
+  const WeekNav = ({ weeksAgo, setWeeksAgo }: { weeksAgo: number; setWeeksAgo: (n: number) => void }) => (
+    <div className="flex items-center justify-center gap-3 mb-4">
+      <button
+        onClick={() => setWeeksAgo(weeksAgo + 1)}
+        className="p-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
+      >
+        <ChevronLeft size={16} />
+      </button>
+      <span className="text-xs font-semibold text-gray-300 min-w-[150px] text-center">
+        {weeksAgo === 0 ? 'Cette semaine' : parisWeekRange(weeksAgo).label}
+      </span>
+      <button
+        onClick={() => setWeeksAgo(Math.max(0, weeksAgo - 1))}
+        disabled={weeksAgo === 0}
+        className="p-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+      >
+        <ChevronRight size={16} />
+      </button>
+    </div>
+  )
 
   return (
     <div className="space-y-6">
@@ -92,7 +147,7 @@ export function RankingsClient({ weeklyRanking, lifetimeRanking, chartData, week
                   {userGroups.map(g => (
                     <button
                       key={g.id}
-                      onClick={() => setSelectedGroupId(g.id)}
+                      onClick={() => { setSelectedGroupId(g.id); setGroupWeeksAgo(0) }}
                       className={cn(
                         'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
                         selectedGroupId === g.id ? 'bg-violet-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'
@@ -111,7 +166,10 @@ export function RankingsClient({ weeklyRanking, lifetimeRanking, chartData, week
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {(currentGroupRanking?.ranking.length ?? 0) === 0 ? (
+                  <WeekNav weeksAgo={groupWeeksAgo} setWeeksAgo={setGroupWeeksAgo} />
+                  {loadingWeek && groupWeeksAgo !== 0 ? (
+                    <div className="text-center py-8 text-gray-600 text-sm animate-pulse">Chargement…</div>
+                  ) : groupRankingData.every(m => m.points === 0) ? (
                     <div className="text-center py-8 text-gray-600">
                       <Users size={36} className="mx-auto mb-3 opacity-40" />
                       <p className="text-sm">Aucune activité cette semaine</p>
@@ -214,12 +272,16 @@ export function RankingsClient({ weeklyRanking, lifetimeRanking, chartData, week
               ))}
             </div>
 
-            {top3.length > 0 && (
+            {(top3.length > 0 || timeframe === 'Weekly') && (
               <Card>
                 <CardHeader>
                   <CardTitle>🏆 Classement national ({timeframe.toLowerCase()})</CardTitle>
                 </CardHeader>
                 <CardContent>
+                  {timeframe === 'Weekly' && <WeekNav weeksAgo={natWeeksAgo} setWeeksAgo={setNatWeeksAgo} />}
+                  {loadingWeek && timeframe === 'Weekly' && natWeeksAgo !== 0 && top3.length === 0 && (
+                    <div className="text-center py-8 text-gray-600 text-sm animate-pulse">Chargement…</div>
+                  )}
                   <div className="flex items-end justify-center gap-4 mb-6">
                     {podiumOrder.map((entry, podiumIdx) => {
                       if (!entry) return null
