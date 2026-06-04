@@ -86,6 +86,7 @@ export const ACTIVITY_DESCRIPTIONS: Record<string, string> = {
   'Réseaux sociaux 2h+': 'Temps d\'écran excessif · malus',
   'Night scroll': 'Scroll tard le soir · malus',
   'Motivation': 'Contenu motivant / mindset',
+  'Stretching 10min': 'Étirements / mobilité (10 min)',
   'Skincare routine': 'Soin du visage',
   'Hygiène complète': 'Douche, dents, soin complet',
   'Travailler 1h sur projet': '+3 pts par heure de travail',
