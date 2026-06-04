@@ -12,6 +12,7 @@ import type { Activity, UserObjective } from '@/types'
 import { formatPoints, cn } from '@/lib/utils'
 import { ACTIVITY_CATEGORIES, ACTIVITY_DESCRIPTIONS } from '@/lib/constants/activities'
 import { InfoTooltip } from '@/components/ui/InfoTooltip'
+import { notifyGroupsActivity } from '@/app/(app)/push/actions'
 
 const SPORT_ACTIVITIES = ['Course à pied', 'Vélo', 'Natation', 'Salle de sport', 'Street workout', 'Pompes', 'Pas']
 const SLEEP_ACTIVITY = 'Sommeil'
@@ -294,6 +295,8 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
         )
       }
       if (!error) {
+        const count = cart.reduce((sum, i) => sum + i.count, 0)
+        notifyGroupsActivity(`a ajouté ${count} activité${count > 1 ? 's' : ''} 💪`).catch(() => {})
         setSuccess(true)
         setTimeout(() => { setSuccess(false); setCart([]); setSelectedGroupIds([]); router.refresh() }, 1500)
       }

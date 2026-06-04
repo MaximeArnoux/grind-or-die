@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { Badge } from '@/components/ui/Badge'
 import { createVoteRequest, cancelVoteRequest } from '@/app/(app)/parametres/actions'
+import { PushToggle } from '@/components/features/PushToggle'
 import type { Profile, Activity } from '@/types'
 
 interface Props {
@@ -300,6 +301,9 @@ export function ParametresClient({ profile, objectives, pendingVoteRequests, act
           )}
         </CardContent>
       </Card>
+
+      {/* Notifications push */}
+      <PushToggle />
 
       {/* Password */}
       <Card>
