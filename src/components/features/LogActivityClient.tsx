@@ -20,7 +20,7 @@ const SPECIAL_ACTIVITIES = ['Jeux vidéo', 'Réseaux sociaux']
 // Activités gérées automatiquement — jamais affichées dans la grille
 const HIDDEN_ACTIVITIES = ['Objectif du jour accompli', 'Objectif du jour réussi']
 
-type SportDiscipline = 'course' | 'velo' | 'natation' | 'salle' | 'street' | 'pompes' | 'pas'
+type SportDiscipline = 'course' | 'velo' | 'natation' | 'salle' | 'street' | 'pompes' | 'pas' | 'stretching'
 
 const DISCIPLINES: { key: SportDiscipline; label: string; emoji: string }[] = [
   { key: 'course', label: 'Course', emoji: '🏃' },
@@ -30,7 +30,11 @@ const DISCIPLINES: { key: SportDiscipline; label: string; emoji: string }[] = [
   { key: 'street', label: 'Street', emoji: '💪' },
   { key: 'pompes', label: 'Pompes', emoji: '🤸' },
   { key: 'pas', label: 'Pas', emoji: '👟' },
+  { key: 'stretching', label: 'Stretching', emoji: '🧘' },
 ]
+
+// Disciplines sans saisie de quantité (points fixes)
+const FIXED_DISCIPLINES: SportDiscipline[] = ['salle', 'street', 'stretching']
 
 function calcSportPoints(discipline: SportDiscipline, value: number): number {
   switch (discipline) {
@@ -39,6 +43,7 @@ function calcSportPoints(discipline: SportDiscipline, value: number): number {
     case 'natation': return Math.floor(value / 30) * 2
     case 'salle': return 5
     case 'street': return 5
+    case 'stretching': return 2
     case 'pompes': return Math.floor(value / 50) * 2
     case 'pas': return Math.floor(value / 10000) * 2
   }
@@ -172,6 +177,11 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
 
   const streetAtLimit = useMemo(() => {
     const a = activities.find(a => a.name === 'Street workout')
+    return a ? isAtDailyLimit(a, todayCounts) : false
+  }, [activities, todayCounts])
+
+  const stretchingAtLimit = useMemo(() => {
+    const a = activities.find(a => a.name === 'Stretching 10min')
     return a ? isAtDailyLimit(a, todayCounts) : false
   }, [activities, todayCounts])
 
@@ -309,9 +319,9 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
     const disciplineNames: Record<SportDiscipline, string> = {
       course: 'Course à pied', velo: 'Vélo', natation: 'Natation',
       salle: 'Salle de sport', street: 'Street workout',
-      pompes: 'Pompes', pas: 'Pas',
+      pompes: 'Pompes', pas: 'Pas', stretching: 'Stretching 10min',
     }
-    const needsInput = discipline !== 'salle' && discipline !== 'street'
+    const needsInput = !FIXED_DISCIPLINES.includes(discipline)
     const val = parseFloat(sportValue)
     if (needsInput && (!sportValue || isNaN(val) || val <= 0)) return
 
@@ -406,7 +416,7 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
   // Sport points preview
   const sportPoints = useMemo(() => {
     const val = parseFloat(sportValue)
-    const needsInput = discipline !== 'salle' && discipline !== 'street'
+    const needsInput = !FIXED_DISCIPLINES.includes(discipline)
     if (needsInput && (!sportValue || isNaN(val))) return null
     return calcSportPoints(discipline, val || 1)
   }, [discipline, sportValue])
@@ -693,7 +703,7 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
             <p className="text-sm font-medium text-gray-300 mb-2">Discipline</p>
             <div className="grid grid-cols-4 gap-2">
               {DISCIPLINES.map(d => {
-                const disciplineAtLimit = (d.key === 'salle' && salleAtLimit) || (d.key === 'street' && streetAtLimit)
+                const disciplineAtLimit = (d.key === 'salle' && salleAtLimit) || (d.key === 'street' && streetAtLimit) || (d.key === 'stretching' && stretchingAtLimit)
                 return (
                   <button
                     key={d.key}
