@@ -137,15 +137,16 @@ export async function submitVote(
   })
 
   if (acceptCount >= threshold) {
+    const { error: objError } = await supabase.from('user_objectives').insert({
+      user_id: request.requester_id,
+      activity_id: request.activity_id,
+      target_count: request.target_count,
+      period: request.period,
+      multiplier: request.multiplier,
+      is_active: true,
+    })
+    if (objError) return { error: `Impossible de créer l'objectif : ${objError.message}` }
     await Promise.all([
-      supabase.from('user_objectives').insert({
-        user_id: request.requester_id,
-        activity_id: request.activity_id,
-        target_count: request.target_count,
-        period: request.period,
-        multiplier: request.multiplier,
-        is_active: true,
-      }),
       supabase.from('objective_vote_requests').update({ status: 'accepted' }).eq('id', requestId),
       supabase.from('notifications').insert({
         user_id: request.requester_id,
@@ -211,15 +212,19 @@ export async function forceVote(requestId: string, decision: 'accept' | 'reject'
   const creatorName = creatorRes.data?.username ?? 'Le créateur'
 
   if (decision === 'accept') {
+    // Crée l'objectif d'abord — si ça échoue (RLS), on n'archive PAS la demande
+    const { error: objError } = await supabase.from('user_objectives').insert({
+      user_id: request.requester_id,
+      activity_id: request.activity_id,
+      target_count: request.target_count,
+      period: request.period,
+      multiplier: request.multiplier,
+      is_active: true,
+    })
+    if (objError) {
+      return { error: `Impossible de créer l'objectif : ${objError.message}` }
+    }
     await Promise.all([
-      supabase.from('user_objectives').insert({
-        user_id: request.requester_id,
-        activity_id: request.activity_id,
-        target_count: request.target_count,
-        period: request.period,
-        multiplier: request.multiplier,
-        is_active: true,
-      }),
       supabase.from('objective_vote_requests').update({ status: 'accepted' }).eq('id', requestId),
       supabase.from('notifications').insert({
         user_id: request.requester_id,
