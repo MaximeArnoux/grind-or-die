@@ -66,7 +66,7 @@ export function Topbar({ profile }: TopbarProps) {
 
   useEffect(() => {
     fetchNotifs()
-    const interval = setInterval(fetchNotifs, 20000)
+    const interval = setInterval(fetchNotifs, 60000)
     return () => clearInterval(interval)
   }, [fetchNotifs])
 

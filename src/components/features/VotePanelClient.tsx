@@ -103,7 +103,7 @@ export function VotePanelClient({ userId }: { userId: string }) {
 
   useEffect(() => {
     fetchPendingVotes()
-    const interval = setInterval(fetchPendingVotes, 15000)
+    const interval = setInterval(fetchPendingVotes, 60000)
     return () => clearInterval(interval)
   }, [fetchPendingVotes])
 
