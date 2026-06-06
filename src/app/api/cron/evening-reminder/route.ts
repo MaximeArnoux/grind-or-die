@@ -40,13 +40,13 @@ export async function GET(request: Request) {
   const loggedUserIds = new Set((todayLogsRes.data ?? []).map((l: any) => l.user_id))
   const allUserIds = (allProfilesRes.data ?? []).map((p: any) => p.id)
 
-  // Utilisateurs qui n'ont PAS loggé aujourd'hui
-  const unloggedUserIds = allUserIds.filter((id: string) => !loggedUserIds.has(id))
+  // TEST MODE : envoie à tout le monde (filtre désactivé temporairement)
+  const unloggedUserIds = allUserIds
 
   const TITLE = '⚡ Grind or Die'
   const BODY = "T'as pas encore loggé aujourd'hui 👀 Valide ta journée avant qu'il soit trop tard 🔥"
 
-  // Notifications in-app (cloche) pour tous les non-loggeurs
+  // Notifications in-app (cloche) pour tous
   if (unloggedUserIds.length > 0) {
     await admin.from('notifications').insert(
       unloggedUserIds.map((userId: string) => ({
@@ -58,8 +58,8 @@ export async function GET(request: Request) {
     )
   }
 
-  // Push browser uniquement pour les abonnés qui n'ont pas loggé
-  const pushTargets = subs.filter((s: any) => !loggedUserIds.has(s.user_id))
+  // Push browser pour tous les abonnés
+  const pushTargets = subs
   const payload = JSON.stringify({ title: TITLE, body: BODY, url: '/ajouter' })
 
   let sent = 0
