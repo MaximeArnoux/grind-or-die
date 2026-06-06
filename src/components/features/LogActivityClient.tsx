@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useMemo, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Search, Plus, Minus, X, ChevronUp, ChevronDown, Zap, Pencil, Check } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/Button'
@@ -140,6 +140,12 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
   const [wakeHours, setWakeHours] = useState('')
   const [wakeMinutes, setWakeMinutes] = useState('0')
   const [sleepLoading, setSleepLoading] = useState(false)
+
+  // Ouvre automatiquement le modal sommeil si on arrive via le pop-up matinal (/ajouter?sleep=1)
+  const searchParams = useSearchParams()
+  useEffect(() => {
+    if (searchParams.get('sleep') === '1') setShowSleep(true)
+  }, [searchParams])
 
   // Jeux vidéo modal
   const [showJeux, setShowJeux] = useState(false)
