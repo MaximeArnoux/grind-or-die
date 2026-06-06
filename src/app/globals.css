@@ -53,3 +53,60 @@ input[type=number]::-webkit-outer-spin-button {
   background: #7c3aed40;
   color: #f0f0f4;
 }
+
+/* ─────────────────────────────────────────────
+   Fluidité & profondeur (100% CSS, sans JS)
+   ───────────────────────────────────────────── */
+
+/* Transitions douces globales sur les éléments interactifs */
+button, a, input, textarea, select,
+[role="button"] {
+  transition: background-color 0.18s ease, border-color 0.18s ease,
+              color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+}
+
+/* Apparition en fondu + léger glissement du contenu de page à chaque navigation */
+@keyframes page-fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.page-fade {
+  animation: page-fade-up 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Relief sur les cartes : ombre douce + légère montée au survol */
+.card-depth {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 16px -8px rgba(0, 0, 0, 0.5);
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+}
+@media (hover: hover) {
+  .card-depth:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3), 0 12px 32px -12px rgba(124, 58, 237, 0.25);
+    border-color: rgba(124, 58, 237, 0.25);
+  }
+}
+
+/* Compression légère sur tous les boutons cliqués */
+button:active:not(:disabled),
+[role="button"]:active {
+  transform: scale(0.97);
+}
+
+/* Scrollbar un peu plus visible et douce */
+::-webkit-scrollbar-thumb:hover {
+  background: #4b5563;
+}
+
+/* Focus ring violet propre */
+:focus-visible {
+  outline: 2px solid #7c3aed;
+  outline-offset: 2px;
+  border-radius: 10px;
+}
+
+/* Respecte les utilisateurs qui désactivent les animations */
+@media (prefers-reduced-motion: reduce) {
+  .page-fade { animation: none; }
+  * { transition: none !important; }
+}
