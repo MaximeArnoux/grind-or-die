@@ -269,7 +269,7 @@ export function GroupesClient({ groups, publicGroups, currentUserId }: { groups:
                                   : member.username.charAt(0).toUpperCase()
                                 }
                               </div>
-                              <span className={cn('text-xs font-bold group-hover:underline', isMe ? 'text-violet-400' : 'text-white')}>{member.username}</span>
+                              <span className={cn('text-xs font-bold group-hover:text-violet-400', isMe ? 'text-violet-400' : 'text-white')}>{member.username}</span>
                             </Link>
                             <p className={cn('text-sm font-black', isFirst ? 'text-yellow-400' : 'text-white')}>
                               {member.points} pts
@@ -319,7 +319,7 @@ export function GroupesClient({ groups, publicGroups, currentUserId }: { groups:
                                 : member.username.charAt(0).toUpperCase()
                               }
                             </div>
-                            <span className="flex-1 text-sm text-white group-hover:underline">{member.username}</span>
+                            <span className="flex-1 text-sm text-white group-hover:text-violet-400">{member.username}</span>
                           </Link>
                           <span className="text-sm font-bold text-white">{member.points} pts</span>
                           {group.created_by === currentUserId && member.user_id !== currentUserId && (

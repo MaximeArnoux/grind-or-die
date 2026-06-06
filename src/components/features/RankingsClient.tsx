@@ -197,7 +197,7 @@ export function RankingsClient({ weeklyRanking, lifetimeRanking, chartData, week
                                       : entry.username.charAt(0).toUpperCase()
                                     }
                                   </div>
-                                  <span className={cn('text-xs font-bold truncate max-w-[72px] text-center group-hover:underline', isMe ? 'text-violet-400' : 'text-white')}>
+                                  <span className={cn('text-xs font-bold truncate max-w-[72px] text-center group-hover:text-violet-400', isMe ? 'text-violet-400' : 'text-white')}>
                                     {entry.username}
                                   </span>
                                 </Link>
@@ -235,7 +235,7 @@ export function RankingsClient({ weeklyRanking, lifetimeRanking, chartData, week
                                     : entry.username.charAt(0).toUpperCase()
                                   }
                                 </div>
-                                <span className={cn('flex-1 text-sm group-hover:underline', entry.user_id === currentUserId ? 'text-violet-300 font-semibold' : 'text-white')}>
+                                <span className={cn('flex-1 text-sm group-hover:text-violet-400', entry.user_id === currentUserId ? 'text-violet-300 font-semibold' : 'text-white')}>
                                   {entry.username}
                                 </span>
                               </Link>
@@ -301,7 +301,7 @@ export function RankingsClient({ weeklyRanking, lifetimeRanking, chartData, week
                                 : entry.username.charAt(0).toUpperCase()
                               }
                             </div>
-                            <span className="text-white font-bold text-sm group-hover:underline">{entry.username}</span>
+                            <span className="text-white font-bold text-sm group-hover:text-violet-400">{entry.username}</span>
                           </Link>
                           <p className={cn('text-lg font-black', entry.rank === 1 ? 'text-yellow-400' : 'text-white')}>
                             {entry.points.toLocaleString('fr-FR')} pts
@@ -335,7 +335,7 @@ export function RankingsClient({ weeklyRanking, lifetimeRanking, chartData, week
                               : entry.username.charAt(0).toUpperCase()
                             }
                           </div>
-                          <span className="flex-1 text-sm font-medium text-white group-hover:underline">{entry.username}</span>
+                          <span className="flex-1 text-sm font-medium text-white group-hover:text-violet-400">{entry.username}</span>
                         </Link>
                         <span className="text-sm font-bold text-white">{entry.points.toLocaleString('fr-FR')} pts</span>
                       </div>

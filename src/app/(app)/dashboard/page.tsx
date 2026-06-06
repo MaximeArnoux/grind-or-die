@@ -251,7 +251,7 @@ export default async function DashboardPage() {
                           : member.username.charAt(0).toUpperCase()
                         }
                       </div>
-                      <span className={cn('flex-1 text-sm truncate group-hover:underline', member.user_id === user.id ? 'text-violet-300 font-semibold' : 'text-white')}>
+                      <span className={cn('flex-1 text-sm truncate group-hover:text-violet-400', member.user_id === user.id ? 'text-violet-300 font-semibold' : 'text-white')}>
                         {member.username}{member.user_id === user.id ? ' (toi)' : ''}
                       </span>
                     </Link>
