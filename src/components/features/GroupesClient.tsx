@@ -186,7 +186,7 @@ export function GroupesClient({ groups, publicGroups, currentUserId }: { groups:
           <p className="text-sm text-gray-600 mt-2">Crée un groupe ou rejoins celui d&apos;un ami</p>
         </Card>
       ) : (
-        <div className="space-y-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           {groups.map(group => (
             <Card key={group.id}>
               <CardHeader>
