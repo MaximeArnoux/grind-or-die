@@ -515,6 +515,9 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
             className="w-full pl-9 pr-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-violet-500"
           />
         </div>
+        <Button variant="outline" size="md" onClick={() => setShowCreate(true)}>
+          <Plus size={16} /> Nouvelle
+        </Button>
         {/* Ma routine */}
         <div className="flex items-center gap-1">
           <button
@@ -531,9 +534,6 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
             <Pencil size={14} />
           </button>
         </div>
-        <Button variant="outline" size="md" onClick={() => setShowCreate(true)}>
-          <Plus size={16} /> Nouvelle
-        </Button>
       </div>
 
       {/* Special activity cards */}
