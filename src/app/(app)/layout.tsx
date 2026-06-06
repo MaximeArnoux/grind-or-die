@@ -7,6 +7,7 @@ import { MobileNav } from '@/components/layout/MobileNav'
 import { VotePanelWrapper } from '@/components/features/VotePanelWrapper'
 import { FadeOnRoute } from '@/components/ui/FadeOnRoute'
 import { SleepReminder } from '@/components/features/SleepReminder'
+import { PushPrompt } from '@/components/features/PushPrompt'
 import { parisWallToUTC } from '@/lib/utils'
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
@@ -79,6 +80,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         <VotePanelWrapper userId={user.id} />
       </Suspense>
       <SleepReminder sleepLoggedToday={sleepLoggedToday} />
+      <PushPrompt />
     </div>
   )
 }
