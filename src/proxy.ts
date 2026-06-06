@@ -35,6 +35,7 @@ export async function proxy(request: NextRequest) {
       request.nextUrl.pathname.startsWith('/verify') ||
       request.nextUrl.pathname.startsWith('/forgot-password') ||
       request.nextUrl.pathname.startsWith('/reset-password') ||
+      request.nextUrl.pathname.startsWith('/feedback') ||
       request.nextUrl.pathname.startsWith('/auth')
 
     if (!user && !isAuthRoute) {
