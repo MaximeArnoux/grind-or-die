@@ -29,27 +29,42 @@ export async function GET(request: Request) {
   const todayWall = new Date(nowParis); todayWall.setHours(0, 0, 0, 0)
   const todayStartISO = parisWallToUTC(todayWall).toISOString()
 
-  // Tous les abonnements push + qui a loggé aujourd'hui
-  const [subsRes, todayLogsRes] = await Promise.all([
+  // Tous les users + abonnements push + qui a loggé aujourd'hui
+  const [allProfilesRes, subsRes, todayLogsRes] = await Promise.all([
+    admin.from('profiles').select('id'),
     admin.from('push_subscriptions').select('id, user_id, subscription'),
     admin.from('activity_logs').select('user_id').gte('logged_at', todayStartISO),
   ])
 
   const subs = subsRes.data ?? []
-  const loggedUserIds = new Set((todayLogsRes.data ?? []).map(l => l.user_id))
+  const loggedUserIds = new Set((todayLogsRes.data ?? []).map((l: any) => l.user_id))
+  const allUserIds = (allProfilesRes.data ?? []).map((p: any) => p.id)
 
-  // Abonnements des utilisateurs qui n'ont PAS loggé aujourd'hui
-  const targets = subs.filter(s => !loggedUserIds.has(s.user_id))
+  // Utilisateurs qui n'ont PAS loggé aujourd'hui
+  const unloggedUserIds = allUserIds.filter((id: string) => !loggedUserIds.has(id))
 
-  const payload = JSON.stringify({
-    title: '⚡ Grind or Die',
-    body: "T'as pas encore loggé aujourd'hui 👀 Valide ta journée avant qu'il soit trop tard 🔥",
-    url: '/ajouter',
-  })
+  const TITLE = '⚡ Grind or Die'
+  const BODY = "T'as pas encore loggé aujourd'hui 👀 Valide ta journée avant qu'il soit trop tard 🔥"
+
+  // Notifications in-app (cloche) pour tous les non-loggeurs
+  if (unloggedUserIds.length > 0) {
+    await admin.from('notifications').insert(
+      unloggedUserIds.map((userId: string) => ({
+        user_id: userId,
+        type: 'daily_reminder',
+        title: TITLE,
+        message: BODY,
+      }))
+    )
+  }
+
+  // Push browser uniquement pour les abonnés qui n'ont pas loggé
+  const pushTargets = subs.filter((s: any) => !loggedUserIds.has(s.user_id))
+  const payload = JSON.stringify({ title: TITLE, body: BODY, url: '/ajouter' })
 
   let sent = 0
   await Promise.all(
-    targets.map(async (s: any) => {
+    pushTargets.map(async (s: any) => {
       try {
         await webpush.sendNotification(s.subscription, payload)
         sent++
@@ -61,5 +76,5 @@ export async function GET(request: Request) {
     })
   )
 
-  return NextResponse.json({ ok: true, sent, candidates: targets.length })
+  return NextResponse.json({ ok: true, inApp: unloggedUserIds.length, sent, candidates: pushTargets.length })
 }
