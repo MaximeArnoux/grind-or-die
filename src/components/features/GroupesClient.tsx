@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Users, Copy, Check, LogIn, Crown, LogOut, Trash2, Globe, Lock, Pencil, UserMinus } from 'lucide-react'
+import { Plus, Users, Copy, Check, LogIn, LogOut, Trash2, Globe, Lock, Pencil, UserMinus } from 'lucide-react'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -247,81 +247,29 @@ export function GroupesClient({ groups, publicGroups, currentUserId }: { groups:
 
                 {group.ranking.length > 0 && (
                   <div>
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Classement hebdo</p>
-
-                    <div className="flex items-end justify-center gap-6 mb-6">
-                      {[group.ranking[1], group.ranking[0], group.ranking[2]].map((member, idx) => {
-                        if (!member) return <div key={idx} className="w-20" />
-                        const isFirst = member.rank === 1
-                        const isMe = member.user_id === currentUserId
-                        return (
-                          <div key={member.user_id} className="flex flex-col items-center gap-1.5">
-                            {isFirst && <Crown size={20} className="text-yellow-400" />}
-                            <Link href={`/profil/${encodeURIComponent(member.username)}`} className="flex flex-col items-center gap-1.5 group">
-                              <div className={cn(
-                                'w-14 h-14 rounded-full flex items-center justify-center text-lg font-black border-3 overflow-hidden',
-                                isFirst ? 'border-yellow-400 ring-2 ring-yellow-400/30' :
-                                  member.rank === 2 ? 'border-gray-400' : 'border-amber-600',
-                                isMe && 'ring-2 ring-violet-500/50'
-                              )}>
-                                {member.avatar_url
-                                  ? <img src={member.avatar_url} alt={member.username} className="w-full h-full object-cover" />
-                                  : member.username.charAt(0).toUpperCase()
-                                }
-                              </div>
-                              <span className={cn('text-xs font-bold group-hover:text-violet-400', isMe ? 'text-violet-400' : 'text-white')}>{member.username}</span>
-                            </Link>
-                            <p className={cn('text-sm font-black', isFirst ? 'text-yellow-400' : 'text-white')}>
-                              {member.points} pts
-                            </p>
-                            <div className={cn(
-                              'rounded-t-lg w-14 flex items-center justify-center text-white font-black text-lg mt-1',
-                              isFirst ? 'bg-yellow-400/20 h-16' :
-                                member.rank === 2 ? 'bg-gray-500/20 h-12' : 'bg-amber-700/20 h-8'
-                            )}>
-                              {member.rank}
-                            </div>
-                            {/* Espace réservé pour le bouton retirer (garde l'alignement des marches) */}
-                            <div className="h-5 flex items-center justify-center">
-                              {group.created_by === currentUserId && member.user_id !== currentUserId && (
-                                <button
-                                  onClick={async () => {
-                                    setLoading(true)
-                                    const result = await removeMember(group.id, member.user_id)
-                                    setLoading(false)
-                                    if (result.error) setError(result.error)
-                                  }}
-                                  className="text-xs text-gray-600 hover:text-red-400 transition-colors"
-                                >
-                                  <UserMinus size={12} />
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-
-                    <div className="space-y-2">
-                      {group.ranking.slice(3).map(member => (
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Membres</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {group.ranking.map(member => (
                         <div
                           key={member.user_id}
                           className={cn(
-                            'flex items-center gap-3 px-3 py-2 rounded-xl',
-                            member.user_id === currentUserId ? 'bg-violet-600/10' : 'hover:bg-gray-800/30'
+                            'flex items-center gap-2.5 px-3 py-2.5 rounded-xl border',
+                            member.user_id === currentUserId
+                              ? 'bg-violet-600/10 border-violet-500/20'
+                              : 'bg-gray-800/40 border-gray-700/40'
                           )}
                         >
-                          <span className="text-sm font-bold text-gray-500 w-4 shrink-0">{member.rank}</span>
-                          <Link href={`/profil/${encodeURIComponent(member.username)}`} className="flex items-center gap-2 flex-1 min-w-0 group">
-                            <div className="w-7 h-7 rounded-full bg-gray-700 flex items-center justify-center text-xs font-bold overflow-hidden shrink-0">
-                              {member.avatar_url
-                                ? <img src={member.avatar_url} alt={member.username} className="w-full h-full object-cover" />
-                                : member.username.charAt(0).toUpperCase()
-                              }
-                            </div>
-                            <span className="flex-1 text-sm text-white group-hover:text-violet-400">{member.username}</span>
+                          <div className="w-7 h-7 rounded-full bg-gray-700 flex items-center justify-center text-xs font-bold overflow-hidden shrink-0">
+                            {member.avatar_url
+                              ? <img src={member.avatar_url} alt={member.username} className="w-full h-full object-cover" />
+                              : member.username.charAt(0).toUpperCase()
+                            }
+                          </div>
+                          <Link href={`/profil/${encodeURIComponent(member.username)}`} className="flex-1 min-w-0 group">
+                            <span className={cn('text-sm font-medium truncate block group-hover:text-violet-400', member.user_id === currentUserId ? 'text-violet-300' : 'text-white')}>
+                              {member.username}
+                            </span>
                           </Link>
-                          <span className="text-sm font-bold text-white">{member.points} pts</span>
                           {group.created_by === currentUserId && member.user_id !== currentUserId && (
                             <button
                               onClick={async () => {
@@ -330,9 +278,9 @@ export function GroupesClient({ groups, publicGroups, currentUserId }: { groups:
                                 setLoading(false)
                                 if (result.error) setError(result.error)
                               }}
-                              className="text-gray-600 hover:text-red-400 transition-colors ml-1"
+                              className="text-gray-600 hover:text-red-400 transition-colors shrink-0"
                             >
-                              <UserMinus size={13} />
+                              <UserMinus size={12} />
                             </button>
                           )}
                         </div>
