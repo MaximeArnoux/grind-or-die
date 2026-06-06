@@ -5,20 +5,27 @@ function Skeleton({ className }: { className?: string }) {
 export default function ClassementsLoading() {
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      <Skeleton className="h-8 w-40" />
+      {/* Header */}
+      <div className="space-y-2">
+        <Skeleton className="h-7 w-40" />
+        <Skeleton className="h-4 w-48" />
+      </div>
+
+      {/* Onglets */}
       <div className="flex gap-2">
-        {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-9 w-28" />)}
+        <Skeleton className="h-9 w-24" />
+        <Skeleton className="h-9 w-24" />
+        <Skeleton className="h-9 w-28" />
       </div>
-      <div className="grid lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-4">
-          <Skeleton className="h-72" />
-          {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-12" />)}
-        </div>
-        <div className="space-y-4">
-          <Skeleton className="h-48" />
-          <Skeleton className="h-52" />
-        </div>
+
+      {/* Sélecteur de groupe */}
+      <div className="flex gap-2">
+        <Skeleton className="h-8 w-32" />
+        <Skeleton className="h-8 w-24" />
       </div>
+
+      {/* Carte classement (nav semaine + podium + liste) */}
+      <Skeleton className="h-[460px]" />
     </div>
   )
 }

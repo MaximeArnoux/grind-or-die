@@ -5,22 +5,26 @@ function Skeleton({ className }: { className?: string }) {
 export default function ActivitesLoading() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <Skeleton className="h-8 w-52" />
-      <div className="flex gap-3">
-        <div className="flex gap-2">
-          {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-9 w-24" />)}
+      {/* Header avec bouton */}
+      <div className="flex items-center justify-between">
+        <div className="space-y-2">
+          <Skeleton className="h-7 w-56" />
+          <Skeleton className="h-4 w-64 max-w-full" />
         </div>
-        <Skeleton className="h-9 flex-1" />
+        <Skeleton className="h-11 w-44 shrink-0" />
       </div>
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
-        <div className="h-12 border-b border-gray-800" />
-        {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="px-5 py-3.5 border-b border-gray-800/50 flex items-center gap-4">
-            <Skeleton className="w-8 h-8 rounded-lg" />
-            <Skeleton className="h-4 flex-1 max-w-xs" />
-            <Skeleton className="h-4 w-16 ml-auto" />
-          </div>
-        ))}
+
+      {/* Recherche */}
+      <Skeleton className="h-11 w-full" />
+
+      {/* Filtres catégories */}
+      <div className="flex gap-2 flex-wrap">
+        {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-8 w-20" />)}
+      </div>
+
+      {/* Liste d'activités */}
+      <div className="grid sm:grid-cols-2 gap-3">
+        {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-[68px]" />)}
       </div>
     </div>
   )
