@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { Search, Plus, Minus, X, ChevronUp, ChevronDown } from 'lucide-react'
+import { Search, Plus, Minus, X, ChevronUp, ChevronDown, Zap, Pencil, Check } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -106,6 +106,7 @@ interface Props {
   userId: string
   userGroups: GroupOption[]
   todayCounts: Record<string, number>
+  initialRoutine: string[]
 }
 
 function isAtDailyLimit(activity: Activity, todayCounts: Record<string, number>): boolean {
@@ -113,7 +114,7 @@ function isAtDailyLimit(activity: Activity, todayCounts: Record<string, number>)
   return (todayCounts[activity.id] ?? 0) >= activity.max_per_day
 }
 
-export function LogActivityClient({ activities, userObjectives, userId, userGroups, todayCounts }: Props) {
+export function LogActivityClient({ activities, userObjectives, userId, userGroups, todayCounts, initialRoutine }: Props) {
   const router = useRouter()
   const supabase = createClient()
 
@@ -158,6 +159,10 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
   const [newEmoji, setNewEmoji] = useState('⚡')
   const [newCategory, setNewCategory] = useState('')
   const [createLoading, setCreateLoading] = useState(false)
+
+  // Ma routine
+  const [routine, setRoutine] = useState<string[]>(initialRoutine)
+  const [showRoutineEdit, setShowRoutineEdit] = useState(false)
 
   const objectiveMap = useMemo(() => {
     const map = new Map<string, UserObjective>()
@@ -238,6 +243,31 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
 
   function removeFromCart(activityId: string) {
     setCart(prev => prev.filter(i => i.activity.id !== activityId))
+  }
+
+  // Ajoute toutes les activités de la routine au panier (hors limites atteintes)
+  function applyRoutine() {
+    setCart(prev => {
+      const next = [...prev]
+      for (const id of routine) {
+        const activity = activities.find(a => a.id === id)
+        if (!activity) continue
+        if (isAtDailyLimit(activity, todayCounts)) continue
+        if (next.some(i => i.activity.id === id)) continue
+        const objective = objectiveMap.get(id)
+        next.push({ activity, count: 1, notes: '', multiplier: objective?.multiplier ?? 1 })
+      }
+      return next
+    })
+  }
+
+  // Ajoute/retire une activité de la routine (sauvegardé dans le profil)
+  async function toggleRoutine(activityId: string) {
+    const next = routine.includes(activityId)
+      ? routine.filter(id => id !== activityId)
+      : [...routine, activityId]
+    setRoutine(next)
+    await supabase.from('profiles').update({ routine: next }).eq('id', userId)
   }
 
   function getMaxAllowed(activity: Activity): number {
@@ -484,6 +514,22 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
             onChange={e => setSearch(e.target.value)}
             className="w-full pl-9 pr-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-violet-500"
           />
+        </div>
+        {/* Ma routine */}
+        <div className="flex items-center gap-1">
+          <button
+            onClick={applyRoutine}
+            className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold transition-colors whitespace-nowrap"
+          >
+            <Zap size={15} /> Ma routine
+          </button>
+          <button
+            onClick={() => setShowRoutineEdit(true)}
+            title="Modifier ma routine"
+            className="p-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
+          >
+            <Pencil size={14} />
+          </button>
         </div>
         <Button variant="outline" size="md" onClick={() => setShowCreate(true)}>
           <Plus size={16} /> Nouvelle
@@ -976,6 +1022,37 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
       </Modal>
 
       {/* Create activity modal */}
+      {/* Modal édition de la routine */}
+      <Modal open={showRoutineEdit} onClose={() => setShowRoutineEdit(false)} title="⚡ Ma routine">
+        <div className="space-y-3">
+          <p className="text-xs text-gray-500">
+            Coche les activités que tu fais habituellement. Le bouton « Ma routine » les ajoutera toutes en 1 clic.
+          </p>
+          <div className="max-h-80 overflow-y-auto grid grid-cols-2 gap-2">
+            {regularActivities.map(a => {
+              const inRoutine = routine.includes(a.id)
+              return (
+                <button
+                  key={a.id}
+                  onClick={() => toggleRoutine(a.id)}
+                  className={cn(
+                    'flex items-center gap-2 p-2.5 rounded-xl border text-left transition-colors',
+                    inRoutine ? 'border-violet-500 bg-violet-600/10' : 'border-gray-800 bg-gray-900 hover:border-gray-700'
+                  )}
+                >
+                  <span className="text-base shrink-0">{a.emoji}</span>
+                  <span className={cn('text-xs flex-1 truncate', inRoutine ? 'text-white font-medium' : 'text-gray-400')}>{a.name}</span>
+                  {inRoutine && <Check size={13} className="text-violet-400 shrink-0" />}
+                </button>
+              )
+            })}
+          </div>
+          <Button className="w-full" onClick={() => setShowRoutineEdit(false)}>
+            Terminé ({routine.length})
+          </Button>
+        </div>
+      </Modal>
+
       <Modal open={showCreate} onClose={() => setShowCreate(false)} title="Créer une activité">
         <div className="space-y-4">
           <div className="flex gap-3">

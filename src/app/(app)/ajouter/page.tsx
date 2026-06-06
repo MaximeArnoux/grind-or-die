@@ -11,7 +11,7 @@ export default async function AjouterPage() {
   const todayStart = new Date(nowParis)
   todayStart.setHours(0, 0, 0, 0)
 
-  const [activitiesRes, objectivesRes, groupMembershipsRes, todayLogsRes] = await Promise.all([
+  const [activitiesRes, objectivesRes, groupMembershipsRes, todayLogsRes, profileRes] = await Promise.all([
     supabase
       .from('activities')
       .select('*, category:activity_categories(name, emoji, color)')
@@ -31,7 +31,14 @@ export default async function AjouterPage() {
       .select('activity_id')
       .eq('user_id', user.id)
       .gte('logged_at', todayStart.toISOString()),
+    supabase
+      .from('profiles')
+      .select('routine')
+      .eq('id', user.id)
+      .single(),
   ])
+
+  const initialRoutine = (profileRes.data?.routine ?? []) as string[]
 
   const todayCounts: Record<string, number> = {}
   for (const log of todayLogsRes.data ?? []) {
@@ -57,6 +64,7 @@ export default async function AjouterPage() {
         userId={user.id}
         userGroups={userGroups}
         todayCounts={todayCounts}
+        initialRoutine={initialRoutine}
       />
     </div>
   )
