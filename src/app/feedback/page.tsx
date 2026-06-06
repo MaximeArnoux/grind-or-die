@@ -12,6 +12,32 @@ const MOMENTS = ['Le matin', 'Dans la journée', 'Le soir', 'Jamais spontanémen
 const RAPPELS = ['Quand un pote me dépasse', 'Un rappel fixe le soir', 'Les deux', 'Aucun']
 const RECO = ['Oui', 'Non', 'Peut-être']
 
+function Choice({ options, value, onChange }: { options: string[]; value: string; onChange: (v: string) => void }) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {options.map(o => (
+        <button
+          key={o}
+          type="button"
+          onClick={() => onChange(o)}
+          className={`px-3 py-2 rounded-xl text-sm font-medium border transition-colors ${value === o ? 'bg-violet-600 border-violet-500 text-white' : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-white'}`}
+        >
+          {o}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-2">
+      <label className="text-sm font-semibold text-white">{label}</label>
+      {children}
+    </div>
+  )
+}
+
 export default function FeedbackPage() {
   const supabase = createClient()
   const [pseudo, setPseudo] = useState('')
@@ -60,28 +86,6 @@ export default function FeedbackPage() {
       </div>
     )
   }
-
-  const Choice = ({ options, value, onChange }: { options: string[]; value: string; onChange: (v: string) => void }) => (
-    <div className="flex flex-wrap gap-2">
-      {options.map(o => (
-        <button
-          key={o}
-          type="button"
-          onClick={() => onChange(o)}
-          className={`px-3 py-2 rounded-xl text-sm font-medium border transition-colors ${value === o ? 'bg-violet-600 border-violet-500 text-white' : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-white'}`}
-        >
-          {o}
-        </button>
-      ))}
-    </div>
-  )
-
-  const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
-    <div className="space-y-2">
-      <label className="text-sm font-semibold text-white">{label}</label>
-      {children}
-    </div>
-  )
 
   return (
     <div className="min-h-screen bg-gray-950 py-10 px-5">
