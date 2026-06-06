@@ -1,5 +1,5 @@
 function Skeleton({ className }: { className?: string }) {
-  return <div className={`animate-pulse bg-gray-800 rounded-xl ${className ?? ''}`} />
+  return <div className={`skeleton ${className ?? ''}`} />
 }
 
 export default function HistoriqueLoading() {
