@@ -33,8 +33,8 @@ export function PushPrompt() {
   if (!visible) return null
 
   return (
-    <div className="fixed bottom-24 lg:bottom-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-sm">
-      <div className="bg-gray-900 border border-violet-500/30 rounded-2xl p-4 shadow-2xl flex items-start gap-3">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+      <div className="bg-gray-900 border border-violet-500/30 rounded-2xl p-6 shadow-2xl w-full max-w-sm flex items-start gap-4">
         <div className="w-9 h-9 rounded-xl bg-violet-600/20 flex items-center justify-center shrink-0">
           <Bell size={18} className="text-violet-400" />
         </div>
