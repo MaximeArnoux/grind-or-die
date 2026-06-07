@@ -70,6 +70,7 @@ export const ACTIVITY_DESCRIPTIONS: Record<string, string> = {
   'Sport compétitif': '+6 pts (match, compétition)',
   '3L d\'eau': 'Bois 3 litres dans la journée',
   'Repas sain': 'Repas équilibré (max 2/jour)',
+  'Petit déjeuner': 'Petit déjeuner équilibré',
   'Jeûne intermittent': 'Jeûne pour respecter l\'objectif (ex : sèche)',
   'Compléments alimentaires': 'Vitamines, protéines…',
   'Deliveroo': 'Commande de livraison · malus',
