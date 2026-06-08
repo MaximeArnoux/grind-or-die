@@ -32,6 +32,12 @@ export function WeeklyChartCard({ initial }: { initial: WeekChartResult }) {
       : null,
   }))
 
+  // Échelle Y : haut fixé à 10 tant qu'aucun jour ne dépasse, sinon auto ;
+  // bas qui descend sous 0 si des jours sont négatifs
+  const realValues = data.days.slice(0, realUpTo + 1).map(d => d.points)
+  const maxVal = Math.max(10, ...realValues, data.average)
+  const minVal = Math.min(0, ...realValues)
+
   return (
     <Card>
       <CardHeader>
@@ -73,7 +79,7 @@ export function WeeklyChartCard({ initial }: { initial: WeekChartResult }) {
                 </linearGradient>
               </defs>
               <XAxis dataKey="day" tick={{ fill: '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis hide />
+              <YAxis hide domain={[minVal, maxVal]} />
               <Tooltip
                 contentStyle={{ background: '#111827', border: '1px solid #374151', borderRadius: 12, color: '#f9fafb' }}
                 labelStyle={{ color: '#9ca3af', fontSize: 12 }}
@@ -96,7 +102,7 @@ export function WeeklyChartCard({ initial }: { initial: WeekChartResult }) {
                 stroke="#7c3aed"
                 strokeWidth={2}
                 fill="url(#colorReal)"
-                dot={{ fill: '#7c3aed', r: 3, strokeWidth: 0 }}
+                dot={{ fill: '#7c3aed', r: 4, stroke: '#0d0d14', strokeWidth: 2 }}
                 activeDot={{ r: 5, fill: '#7c3aed', stroke: '#1f2937', strokeWidth: 2 }}
                 connectNulls={false}
               />
@@ -109,6 +115,7 @@ export function WeeklyChartCard({ initial }: { initial: WeekChartResult }) {
                 strokeWidth={2}
                 strokeDasharray="3 4"
                 dot={false}
+                activeDot={false}
                 connectNulls={false}
                 isAnimationActive={false}
               />
