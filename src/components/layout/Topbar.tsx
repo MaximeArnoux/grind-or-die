@@ -118,7 +118,7 @@ export function Topbar({ profile }: TopbarProps) {
         </button>
 
         {notifOpen && (
-          <div className="absolute right-0 top-full mt-2 w-80 bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl overflow-hidden z-50">
+          <div className="fixed left-3 right-3 top-16 w-auto sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-80 bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl overflow-hidden z-50">
             <div className="px-4 py-3 border-b border-gray-800 flex items-center justify-between">
               <span className="text-sm font-bold text-white">Notifications</span>
               <button onClick={() => setNotifOpen(false)} className="p-1 rounded-lg hover:bg-gray-800 text-gray-500">
