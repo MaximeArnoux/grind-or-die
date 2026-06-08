@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { MANDATORY_ACTIVITIES, MANDATORY_ACTIVITY_NAMES } from '@/lib/constants/streak'
-import { CheckCircle2, Circle } from 'lucide-react'
+import { CheckCircle2, Circle, XCircle } from 'lucide-react'
 import { ObjectiveDeleteButton } from './ObjectiveDeleteButton'
 import { parisWallToUTC } from '@/lib/utils'
 
@@ -73,21 +73,31 @@ export async function MandatoryChecklist({ userId }: { userId: string }) {
     }
   }
 
-  function isCompleted(mandatoryId: string): boolean {
+  const junkLogged = loggedNames.some(n => (MANDATORY_ACTIVITY_NAMES.mandatory_no_junk as string[]).includes(n))
+  const sleepLogged = !!sleepLog
+
+  // État d'un objectif : 'done' (vert), 'failed' (rouge), 'pending' (gris)
+  function getState(mandatoryId: string): 'done' | 'failed' | 'pending' {
     switch (mandatoryId) {
       case 'mandatory_water':
-        return loggedNames.includes(MANDATORY_ACTIVITY_NAMES.mandatory_water)
+        return loggedNames.includes(MANDATORY_ACTIVITY_NAMES.mandatory_water) ? 'done' : 'pending'
       case 'mandatory_sleep':
-        return sleptEnough
+        if (!sleepLogged) return 'pending'
+        return sleptEnough ? 'done' : 'failed'
       case 'mandatory_sleep_time':
-        return bedtimeOk
+        if (!sleepLogged) return 'pending'
+        return bedtimeOk ? 'done' : 'failed'
       case 'mandatory_no_junk':
-        return !loggedNames.some(n => (MANDATORY_ACTIVITY_NAMES.mandatory_no_junk as string[]).includes(n))
+        return junkLogged ? 'failed' : 'done'
       case 'mandatory_sport':
-        return logs.some(l => l.activity?.category?.name === 'Fitness')
+        return logs.some(l => l.activity?.category?.name === 'Fitness') ? 'done' : 'pending'
       default:
-        return false
+        return 'pending'
     }
+  }
+
+  function isCompleted(mandatoryId: string): boolean {
+    return getState(mandatoryId) === 'done'
   }
 
   const fixedCompleted = MANDATORY_ACTIVITIES.filter(a => isCompleted(a.id)).length
@@ -152,21 +162,28 @@ export async function MandatoryChecklist({ userId }: { userId: string }) {
       <CardContent>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {MANDATORY_ACTIVITIES.map((activity) => {
-            const done = isCompleted(activity.id)
+            const state = getState(activity.id)
             return (
               <div
                 key={activity.id}
-                className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${done
-                  ? 'bg-green-500/10 border-green-500/20'
+                className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
+                  state === 'done' ? 'bg-green-500/10 border-green-500/20'
+                  : state === 'failed' ? 'bg-red-500/10 border-red-500/20'
                   : 'bg-gray-800/50 border-gray-800'
-                  }`}
+                }`}
               >
-                {done
+                {state === 'done'
                   ? <CheckCircle2 size={18} className="text-green-400 shrink-0" />
-                  : <Circle size={18} className="text-gray-600 shrink-0" />
+                  : state === 'failed'
+                    ? <XCircle size={18} className="text-red-400 shrink-0" />
+                    : <Circle size={18} className="text-gray-600 shrink-0" />
                 }
                 <div className="min-w-0">
-                  <p className={`text-sm font-medium truncate ${done ? 'text-green-400' : 'text-gray-400'}`}>
+                  <p className={`text-sm font-medium truncate ${
+                    state === 'done' ? 'text-green-400'
+                    : state === 'failed' ? 'text-red-400'
+                    : 'text-gray-400'
+                  }`}>
                     {activity.emoji} {activity.name}
                   </p>
                   <p className="text-xs text-gray-600 truncate">{activity.description}</p>
