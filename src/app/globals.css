@@ -122,9 +122,41 @@ button:active:not(:disabled),
   border-radius: 0.75rem;
 }
 
+/* Podium : la marche monte depuis le bas */
+@keyframes podium-rise {
+  from { transform: scaleY(0); opacity: 0; }
+  to   { transform: scaleY(1); opacity: 1; }
+}
+.podium-bar {
+  transform-origin: bottom;
+  animation: podium-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Avatar du podium : petit pop à l'arrivée */
+@keyframes podium-pop {
+  0%   { transform: scale(0.6); opacity: 0; }
+  60%  { transform: scale(1.08); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.podium-pop { animation: podium-pop 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* Couronne du 1er : pulsation douce */
+@keyframes crown-glow {
+  0%, 100% { transform: translateY(0) scale(1); filter: drop-shadow(0 0 2px rgba(250, 204, 21, 0.4)); }
+  50%      { transform: translateY(-2px) scale(1.1); filter: drop-shadow(0 0 8px rgba(250, 204, 21, 0.7)); }
+}
+.crown-glow { animation: crown-glow 2s ease-in-out infinite; }
+
+/* Liste de classement : apparition en cascade */
+@keyframes rank-in {
+  from { opacity: 0; transform: translateX(-8px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.rank-in { animation: rank-in 0.35s ease-out both; }
+
 /* Respecte les utilisateurs qui désactivent les animations */
 @media (prefers-reduced-motion: reduce) {
-  .page-fade { animation: none; }
+  .page-fade, .podium-bar, .podium-pop, .crown-glow, .rank-in { animation: none; }
   .skeleton { animation: none; }
   * { transition: none !important; }
 }
