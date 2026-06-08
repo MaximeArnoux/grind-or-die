@@ -97,6 +97,7 @@ export const ACTIVITY_DESCRIPTIONS: Record<string, string> = {
   'Revenue généré': 'Quand tu gagnes de l\'argent',
   '5 cold emails envoyés': 'Prospection par email',
   'Money management': 'Dépense impulsive / mauvaise gestion · malus',
+  'Trading Open': 'Non prise d\'un open de session trading',
   'Procrastiner sur une tâche importante': 'Tâche importante repoussée · malus',
   'Jeux vidéo': '−3 pts dès 3h, pénalité croissante',
   'Réseaux sociaux': '−3 pts dès 2h, pénalité croissante',
