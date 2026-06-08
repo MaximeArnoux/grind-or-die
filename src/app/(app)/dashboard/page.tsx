@@ -3,12 +3,12 @@ import Link from 'next/link'
 import { Trophy, TrendingUp, Star, Users, ArrowRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
-import { formatPoints, formatTimeAgo, capitalizeFirst, cn, toParisDate, parisWeekStartISO, parisWallToUTC } from '@/lib/utils'
-import { DashboardChart } from '@/components/features/DashboardChart'
+import { formatPoints, formatTimeAgo, capitalizeFirst, cn, parisWeekStartISO, parisWallToUTC } from '@/lib/utils'
+import { WeeklyChartCard } from '@/components/features/WeeklyChartCard'
+import { getWeekChart } from '@/app/(app)/dashboard/actions'
 import { MandatoryChecklist } from '@/components/features/MandatoryChecklist'
 import { GroupChatClient } from '@/components/features/GroupChatClient'
-import { format, subDays, startOfWeek } from 'date-fns'
-import { fr } from 'date-fns/locale'
+import { subDays, startOfWeek } from 'date-fns'
 
 type WeekLog = {
   points_earned: number
@@ -35,8 +35,6 @@ export default async function DashboardPage() {
   const weekStartISO = parisWeekStartISO()
   const todayWall = new Date(nowParis); todayWall.setHours(0, 0, 0, 0)
   const todayStartISO = parisWallToUTC(todayWall).toISOString()
-  const sevenWall = subDays(nowParis, 6); sevenWall.setHours(0, 0, 0, 0)
-  const sevenDaysAgoISO = parisWallToUTC(sevenWall).toISOString()
   // Comparaison "jours terminés" (on exclut le jour en cours) :
   // cette semaine [lundi 00h → aujourd'hui 00h] vs semaine dernière [lundi 00h → même jour 00h -7j]
   const prevWeekWall = startOfWeek(subDays(nowParis, 7), { weekStartsOn: 1 })
@@ -44,24 +42,22 @@ export default async function DashboardPage() {
   const prevTodayStartISO = new Date(new Date(todayStartISO).getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()
 
   // Parallel data fetching
-  const [profileRes, streakRes, totalPointsRes, weekPointsRes, todayPointsRes, recentLogsRes, myGroupMembershipsRes, chartLogsRes, thisWeekDoneRes, lastWeekDoneRes] = await Promise.all([
+  const [profileRes, totalPointsRes, weekPointsRes, todayPointsRes, recentLogsRes, myGroupMembershipsRes, thisWeekDoneRes, lastWeekDoneRes, initialWeekChart] = await Promise.all([
     supabase.from('profiles').select('username, avatar_url').eq('id', user.id).single(),
-    supabase.from('user_streaks').select('current_streak').eq('user_id', user.id).single(),
     supabase.from('activity_logs').select('points_earned').eq('user_id', user.id),
     supabase.from('activity_logs').select('points_earned, activity:activities(type)').eq('user_id', user.id).gte('logged_at', weekStartISO),
     supabase.from('activity_logs').select('points_earned').eq('user_id', user.id).gte('logged_at', todayStartISO),
     supabase.from('activity_logs').select('id, points_earned, logged_at, activity:activities(name, emoji)').eq('user_id', user.id).order('logged_at', { ascending: false }).limit(5),
     supabase.from('group_members').select('group_id, role, group:groups(id, name)').eq('user_id', user.id),
-    // Single query for last 7 days chart data
-    supabase.from('activity_logs').select('points_earned, logged_at').eq('user_id', user.id).gte('logged_at', sevenDaysAgoISO),
     // Jours terminés cette semaine (lundi → aujourd'hui 00h, hors jour en cours)
     supabase.from('activity_logs').select('points_earned').eq('user_id', user.id).gte('logged_at', weekStartISO).lt('logged_at', todayStartISO),
     // Mêmes jours terminés la semaine dernière
     supabase.from('activity_logs').select('points_earned').eq('user_id', user.id).gte('logged_at', prevWeekStartISO).lt('logged_at', prevTodayStartISO),
+    // Graphique hebdo (semaine en cours) pour WeeklyChartCard
+    getWeekChart(0),
   ])
 
   const profile = profileRes.data
-  const streak = streakRes.data
 
   const totalPoints = (totalPointsRes.data ?? []).reduce((sum, l) => sum + l.points_earned, 0)
   const weekPoints = (weekPointsRes.data ?? []).reduce((sum, l) => sum + l.points_earned, 0)
@@ -140,17 +136,6 @@ export default async function DashboardPage() {
   }
 
   const myRank = myGroupRanking.findIndex(m => m.user_id === user.id) + 1
-
-  // Weekly chart — group single query results by Paris day
-  const dayMap = new Map<string, number>()
-  for (const log of chartLogsRes.data ?? []) {
-    const key = format(toParisDate(log.logged_at), 'yyyy-MM-dd')
-    dayMap.set(key, (dayMap.get(key) ?? 0) + log.points_earned)
-  }
-  const chartData = Array.from({ length: 7 }, (_, i) => {
-    const day = subDays(nowParis, 6 - i)
-    return { day: format(day, 'EEE', { locale: fr }), points: dayMap.get(format(day, 'yyyy-MM-dd')) ?? 0 }
-  })
 
   // Points breakdown
   const weekLogs: WeekLog[] = weekPointsRes.data ?? []
@@ -370,21 +355,8 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Weekly chart */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Série actuelle 🔥</CardTitle>
-              <div className="text-right">
-                <div className="text-2xl font-black text-white">{streak?.current_streak ?? 0} jours</div>
-                <p className="text-xs text-green-400">Continue comme ça !</p>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <DashboardChart data={chartData} />
-          </CardContent>
-        </Card>
+        {/* Weekly chart avec navigation + projection + moyenne */}
+        <WeeklyChartCard initial={initialWeekChart} />
       </div>
 
       {/* Mes groupes */}
