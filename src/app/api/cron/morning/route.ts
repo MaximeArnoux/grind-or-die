@@ -24,14 +24,14 @@ export async function GET(request: Request) {
     }
   }
 
-  // Garde-fou : on n'envoie que le matin (8h–10h Paris selon l'heure d'été/hiver)
-  const parisHour = parseInt(
-    new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', hour: 'numeric', hour12: false }).format(new Date()),
-    10
-  )
-  if (parisHour < 7 || parisHour > 10) {
-    return Response.json({ skipped: true, parisHour })
-  }
+  // ⚠️ GARDE-FOU D'HEURE DÉSACTIVÉ TEMPORAIREMENT POUR TEST — à réactiver après
+  // const parisHour = parseInt(
+  //   new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', hour: 'numeric', hour12: false }).format(new Date()),
+  //   10
+  // )
+  // if (parisHour < 7 || parisHour > 10) {
+  //   return Response.json({ skipped: true, parisHour })
+  // }
 
   if (!VAPID_PUBLIC || !VAPID_PRIVATE) {
     return Response.json({ error: 'Push non configuré' }, { status: 500 })
