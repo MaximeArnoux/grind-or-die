@@ -29,6 +29,9 @@ export const metadata: Metadata = {
     description: 'Track tes habitudes, gagne des points, défie tes amis.',
   },
   robots: { index: true, follow: true },
+  verification: {
+    google: 'HaBAlGCHZp57g1fYHD7xKSe_KPzEYDzcdlu5Ca1f2cU',
+  },
 }
 
 export const viewport: Viewport = {
