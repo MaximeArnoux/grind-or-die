@@ -30,6 +30,7 @@ export async function proxy(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser()
 
     const isAuthRoute =
+      request.nextUrl.pathname === '/' ||
       request.nextUrl.pathname.startsWith('/login') ||
       request.nextUrl.pathname.startsWith('/register') ||
       request.nextUrl.pathname.startsWith('/verify') ||
