@@ -31,6 +31,8 @@ export async function proxy(request: NextRequest) {
 
     const isAuthRoute =
       request.nextUrl.pathname === '/' ||
+      request.nextUrl.pathname === '/sitemap.xml' ||
+      request.nextUrl.pathname === '/robots.txt' ||
       request.nextUrl.pathname.startsWith('/login') ||
       request.nextUrl.pathname.startsWith('/register') ||
       request.nextUrl.pathname.startsWith('/verify') ||
