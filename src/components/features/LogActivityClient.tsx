@@ -855,7 +855,7 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
               onClick={handleSport}
               loading={sportLoading}
               disabled={
-                discipline !== 'salle' && discipline !== 'street' &&
+                !FIXED_DISCIPLINES.includes(discipline) &&
                 (!sportValue || isNaN(parseFloat(sportValue)) || parseFloat(sportValue) <= 0)
               }
             >
