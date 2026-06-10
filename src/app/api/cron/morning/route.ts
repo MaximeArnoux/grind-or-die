@@ -30,12 +30,11 @@ function pick(arr: string[]) {
 }
 
 export async function GET(request: Request) {
-  // Sécurité : seul Vercel Cron (avec le secret) peut déclencher
-  if (process.env.CRON_SECRET) {
-    const auth = request.headers.get('authorization')
-    if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+  // Sécurité : seul Vercel Cron (avec le secret) peut déclencher.
+  // Fail-closed : si le secret n'est pas configuré, on refuse tout.
+  const auth = request.headers.get('authorization')
+  if (!process.env.CRON_SECRET || auth !== `Bearer ${process.env.CRON_SECRET}`) {
+    return Response.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   // Garde-fou : on n'envoie que le matin (8h–10h Paris selon l'heure d'été/hiver)

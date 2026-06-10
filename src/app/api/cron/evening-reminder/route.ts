@@ -7,9 +7,10 @@ const VAPID_PUBLIC = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
 const VAPID_PRIVATE = process.env.VAPID_PRIVATE_KEY
 
 export async function GET(request: Request) {
-  // Sécurité : seul Vercel Cron (avec le secret) peut déclencher
+  // Sécurité : seul Vercel Cron (avec le secret) peut déclencher.
+  // Fail-closed : si le secret n'est pas configuré, on refuse tout.
   const authHeader = request.headers.get('authorization')
-  if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
   }
 
