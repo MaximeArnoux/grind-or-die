@@ -5,7 +5,8 @@ import { parisWallToUTC } from '@/lib/utils'
 const VAPID_PUBLIC = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
 const VAPID_PRIVATE = process.env.VAPID_PRIVATE_KEY
 
-const MESSAGES = [
+// Messages pour les membres d'un groupe (ton compétitif)
+const GROUP_MESSAGES = [
   '☀️ Bien réveillé ? Passe devant tout le monde aujourd\'hui 🏆',
   '🔥 Tes potes dorment encore. Prends de l\'avance maintenant.',
   '💪 Nouvelle journée. Qui sera n°1 ce soir ? À toi de jouer.',
@@ -14,6 +15,19 @@ const MESSAGES = [
   'Nouvelle journée = nouvelle chance de grind. Go 💪',
   '⚡ Pense à logger tes activités aujourd\'hui. Reste devant !',
 ]
+
+// Messages pour les membres sans groupe (ton solo, pas de compétition)
+const SOLO_MESSAGES = [
+  '☀️ Nouvelle journée, logge ta première activité 🔥',
+  '💪 Bien réveillé ? C\'est le moment de grind.',
+  '⚡ Lance ta journée : ajoute ta première activité.',
+  '☀️ Good morning ! Une journée de plus pour devenir meilleur.',
+  'Nouvelle journée = nouvelle occasion de progresser. Go 💪',
+]
+
+function pick(arr: string[]) {
+  return arr[Math.floor(Math.random() * arr.length)]
+}
 
 export async function GET(request: Request) {
   // Sécurité : seul Vercel Cron (avec le secret) peut déclencher
@@ -72,12 +86,19 @@ export async function GET(request: Request) {
   const targets = subs.filter(s => !loggedSet.has(s.user_id))
   if (targets.length === 0) return Response.json({ sent: 0 })
 
-  const body = MESSAGES[Math.floor(Math.random() * MESSAGES.length)]
-  const payload = JSON.stringify({ title: '⚡ Grind or Die', body, url: '/ajouter' })
+  // Qui est dans au moins un groupe ?
+  const targetUserIds = [...new Set(targets.map(s => s.user_id))]
+  const { data: groupRows } = await supabase
+    .from('group_members')
+    .select('user_id')
+    .in('user_id', targetUserIds)
+  const inGroup = new Set((groupRows ?? []).map(g => g.user_id))
 
   let sent = 0
   await Promise.all(
     targets.map(async (s: any) => {
+      const body = inGroup.has(s.user_id) ? pick(GROUP_MESSAGES) : pick(SOLO_MESSAGES)
+      const payload = JSON.stringify({ title: '⚡ Grind or Die', body, url: '/ajouter' })
       try {
         await webpush.sendNotification(s.subscription, payload)
         sent++
