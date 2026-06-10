@@ -105,6 +105,39 @@ button:active:not(:disabled),
   border-radius: 10px;
 }
 
+/* ── Landing page : animations d'arrivée (test) ─────────────── */
+@keyframes landing-rise {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.landing-rise { animation: landing-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+@keyframes landing-slide {
+  from { opacity: 0; transform: translateX(-12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.landing-cascade { animation: landing-slide 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+@keyframes podium-scale {
+  from { transform: scaleY(0); }
+  to   { transform: scaleY(1); }
+}
+.podium-rise { transform-origin: bottom; animation: podium-scale 0.55s cubic-bezier(0.34, 1.4, 0.5, 1) both; }
+
+@keyframes crown-drop {
+  0%   { opacity: 0; transform: translateY(-12px); }
+  65%  { opacity: 1; transform: translateY(3px); }
+  100% { transform: translateY(0); }
+}
+.crown-drop { animation: crown-drop 0.6s ease-out 0.5s both; }
+
+@keyframes glow-breathe {
+  0%, 100% { transform: scale(1); opacity: 0.5; }
+  50%      { transform: scale(1.18); opacity: 0.85; }
+}
+.glow-breathe { animation: glow-breathe 7s ease-in-out infinite; }
+.glow-breathe-slow { animation: glow-breathe 9s ease-in-out infinite; }
+
 /* Skeleton "shimmer" — reflet qui balaie pendant le chargement (look pro) */
 @keyframes shimmer {
   0%   { background-position: -200% 0; }

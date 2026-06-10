@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { Zap, Flame, Trophy, TrendingUp } from 'lucide-react'
+import { CountUp } from '@/components/ui/CountUp'
 
 const MOCK_ACTIVITIES = [
   { emoji: '🏋️', name: 'Salle de sport', pts: '+5', color: 'text-green-400' },
@@ -23,9 +24,9 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
       {/* Left — App preview */}
       <div className="hidden lg:flex flex-col w-[55%] bg-gradient-to-br from-gray-950 via-violet-950/20 to-gray-950 border-r border-gray-800/50 p-10 relative overflow-hidden">
 
-        {/* Background glow */}
-        <div className="absolute top-0 left-0 w-96 h-96 bg-violet-600/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 right-0 w-80 h-80 bg-indigo-600/8 rounded-full blur-3xl pointer-events-none" />
+        {/* Background glow — respiration douce */}
+        <div className="absolute top-0 left-0 w-96 h-96 bg-violet-600/10 rounded-full blur-3xl pointer-events-none glow-breathe" />
+        <div className="absolute bottom-0 right-0 w-80 h-80 bg-indigo-600/8 rounded-full blur-3xl pointer-events-none glow-breathe-slow" />
 
         {/* Logo */}
         <div className="relative flex items-center gap-3 mb-10">
@@ -38,7 +39,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
         </div>
 
         {/* Headline */}
-        <div className="relative mb-8">
+        <div className="relative mb-8 landing-rise">
           <h1 className="text-4xl font-black text-white leading-tight mb-3">
             Deviens la meilleure<br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-indigo-400">
@@ -53,28 +54,43 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
         {/* App mock */}
         <div className="relative flex-1 flex flex-col gap-3">
 
+          {/* Badge "En direct" */}
+          <div className="flex items-center gap-1.5 landing-rise">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75 animate-ping" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-green-400" />
+            </span>
+            <span className="text-[11px] font-semibold text-green-400 uppercase tracking-wider">En direct</span>
+          </div>
+
           {/* Stats bar */}
           <div className="grid grid-cols-3 gap-3">
-            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4">
+            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4 landing-rise" style={{ animationDelay: '0.05s' }}>
               <div className="flex items-center gap-1.5 mb-1">
                 <Trophy size={13} className="text-yellow-400" />
                 <span className="text-xs text-gray-500">Points totaux</span>
               </div>
-              <p className="text-2xl font-black text-white">2 340</p>
+              <p className="text-2xl font-black text-white">
+                <CountUp end={2340} separator duration={1500} />
+              </p>
             </div>
-            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4">
+            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4 landing-rise" style={{ animationDelay: '0.15s' }}>
               <div className="flex items-center gap-1.5 mb-1">
                 <TrendingUp size={13} className="text-green-400" />
                 <span className="text-xs text-gray-500">Cette semaine</span>
               </div>
-              <p className="text-2xl font-black text-green-400">+340</p>
+              <p className="text-2xl font-black text-green-400">
+                <CountUp end={340} prefix="+" duration={1300} />
+              </p>
             </div>
-            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4">
+            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4 landing-rise" style={{ animationDelay: '0.25s' }}>
               <div className="flex items-center gap-1.5 mb-1">
                 <Flame size={13} className="text-orange-400" />
                 <span className="text-xs text-gray-500">Série actuelle</span>
               </div>
-              <p className="text-2xl font-black text-white">14 🔥</p>
+              <p className="text-2xl font-black text-white">
+                <CountUp end={14} suffix=" 🔥" duration={1100} />
+              </p>
             </div>
           </div>
 
@@ -88,7 +104,11 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
               </p>
               <div className="space-y-2 flex-1">
                 {MOCK_ACTIVITIES.map((a, i) => (
-                  <div key={i} className="flex items-center justify-between py-2 border-b border-gray-800/50 last:border-0">
+                  <div
+                    key={i}
+                    className="flex items-center justify-between py-2 border-b border-gray-800/50 last:border-0 landing-cascade"
+                    style={{ animationDelay: `${0.4 + i * 0.12}s` }}
+                  >
                     <div className="flex items-center gap-2.5">
                       <span className="text-base">{a.emoji}</span>
                       <span className="text-xs text-gray-300 font-medium">{a.name}</span>
@@ -118,14 +138,21 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
                     const border = isFirst ? 'border-yellow-400 ring-2 ring-yellow-400/30' : m.rank === 2 ? 'border-gray-400' : 'border-amber-700'
                     const nameColor = isFirst ? 'text-yellow-400' : 'text-gray-300'
                     const ptsColor = isFirst ? 'text-yellow-400' : 'text-white'
+                    const barDelay = `${0.55 + idx * 0.12}s`
                     return (
                       <div key={m.rank} className="flex flex-col items-center gap-1">
-                        {isFirst && <span className="text-base">👑</span>}
-                        <div className={`w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 border-2 ${border} flex items-center justify-center text-[10px] font-black text-white`}>
+                        {isFirst && <span className="text-base crown-glow">👑</span>}
+                        <div
+                          className={`w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 border-2 ${border} flex items-center justify-center text-[10px] font-black text-white podium-pop`}
+                          style={{ animationDelay: barDelay }}
+                        >
                           {m.name.charAt(0).toUpperCase()}
                         </div>
                         <span className={`text-[10px] font-bold ${nameColor}`}>{m.name}</span>
-                        <div className={`w-10 ${height} rounded-t-lg flex items-center justify-center ${isFirst ? 'bg-yellow-500/20' : m.rank === 2 ? 'bg-gray-700/50' : 'bg-amber-900/30'}`}>
+                        <div
+                          className={`w-10 ${height} rounded-t-lg flex items-center justify-center podium-bar ${isFirst ? 'bg-yellow-500/20' : m.rank === 2 ? 'bg-gray-700/50' : 'bg-amber-900/30'}`}
+                          style={{ animationDelay: barDelay }}
+                        >
                           <span className={`text-[10px] font-black ${ptsColor}`}>{m.pts}</span>
                         </div>
                       </div>
@@ -135,8 +162,12 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
 
                 {/* Reste du classement */}
                 <div className="space-y-1 border-t border-gray-800/60 pt-2">
-                  {MOCK_RANKING.slice(3).map(m => (
-                    <div key={m.rank} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-800/30">
+                  {MOCK_RANKING.slice(3).map((m, i) => (
+                    <div
+                      key={m.rank}
+                      className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-800/30 rank-in"
+                      style={{ animationDelay: `${0.9 + i * 0.12}s` }}
+                    >
                       <span className="text-[10px] font-bold text-gray-600 w-3">{m.rank}</span>
                       <div className="w-5 h-5 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-[9px] font-black text-white">
                         {m.name.charAt(0).toUpperCase()}
@@ -173,7 +204,11 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
               { label: '📖 15min lecture · ×1.25', color: 'bg-blue-500/10 border-blue-500/20 text-blue-400' },
               { label: '💧 3L d\'eau · ×1.5', color: 'bg-cyan-500/10 border-cyan-500/20 text-cyan-400' },
             ].map((b, i) => (
-              <span key={i} className={`px-3 py-1.5 rounded-full border text-xs font-medium ${b.color}`}>
+              <span
+                key={i}
+                className={`px-3 py-1.5 rounded-full border text-xs font-medium landing-cascade ${b.color}`}
+                style={{ animationDelay: `${1.1 + i * 0.1}s` }}
+              >
                 {b.label}
               </span>
             ))}
