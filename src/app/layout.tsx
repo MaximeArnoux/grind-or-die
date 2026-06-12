@@ -10,6 +10,10 @@ export const metadata: Metadata = {
   description: 'Grind or Die : l\'app de discipline entre amis. Track tes habitudes, gagne des points, défie tes potes et grimpe au classement. Sport, lecture, sommeil, nutrition — chaque jour compte.',
   keywords: ['grind or die', 'app discipline', 'habitudes', 'productivité', 'classement amis', 'lock in', 'développement personnel', 'streak', 'motivation'],
   manifest: '/manifest.json',
+  icons: {
+    icon: [{ url: '/icon', type: 'image/png' }],
+    apple: [{ url: '/apple-icon', type: 'image/png' }],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
