@@ -87,7 +87,7 @@ export function Sidebar({ streak, username }: SidebarProps) {
               <div key={i} className="flex-1 flex flex-col items-center gap-1">
                 <div className={cn(
                   'w-full h-1.5 rounded-full',
-                  i < (streak % 7) ? 'bg-green-400' : 'bg-gray-800'
+                  i < Math.min(streak, 7) ? 'bg-green-400' : 'bg-gray-800'
                 )} />
                 <span className="text-[10px] text-gray-600">{day}</span>
               </div>

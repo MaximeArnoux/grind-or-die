@@ -109,5 +109,41 @@ export async function GET(request: Request) {
     })
   )
 
-  return Response.json({ sent, targets: targets.length })
+  // Reset streaks for users who missed yesterday
+  const yesterdayWall = new Date(nowParis)
+  yesterdayWall.setDate(yesterdayWall.getDate() - 1)
+  yesterdayWall.setHours(0, 0, 0, 0)
+  const todayMidnightWall = new Date(nowParis)
+  todayMidnightWall.setHours(0, 0, 0, 0)
+  const yesterdayStartISO = parisWallToUTC(yesterdayWall).toISOString()
+  const yesterdayEndISO = parisWallToUTC(todayMidnightWall).toISOString()
+
+  const { data: activeStreaks } = await supabase
+    .from('user_streaks')
+    .select('user_id')
+    .gt('current_streak', 0)
+
+  let streaksReset = 0
+  if (activeStreaks && activeStreaks.length > 0) {
+    const streakUserIds = activeStreaks.map((s: any) => s.user_id)
+    const { data: yesterdayLogs } = await supabase
+      .from('activity_logs')
+      .select('user_id')
+      .in('user_id', streakUserIds)
+      .gte('logged_at', yesterdayStartISO)
+      .lt('logged_at', yesterdayEndISO)
+
+    const loggedYesterday = new Set((yesterdayLogs ?? []).map((l: any) => l.user_id))
+    const toReset = streakUserIds.filter((id: string) => !loggedYesterday.has(id))
+
+    if (toReset.length > 0) {
+      await supabase
+        .from('user_streaks')
+        .update({ current_streak: 0, updated_at: new Date().toISOString() })
+        .in('user_id', toReset)
+      streaksReset = toReset.length
+    }
+  }
+
+  return Response.json({ sent, targets: targets.length, streaksReset })
 }
