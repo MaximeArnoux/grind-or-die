@@ -101,6 +101,23 @@ export function getRankSuffix(rank: number): string {
   return 'ème'
 }
 
+export function computeStreak(logs: { logged_at: string }[]): number {
+  if (!logs || logs.length === 0) return 0
+  const nowParis = new Date(new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }))
+  const todayKey = format(nowParis, 'yyyy-MM-dd')
+  const yesterdayKey = format(subDays(nowParis, 1), 'yyyy-MM-dd')
+  const logDates = new Set(logs.map(l => format(toParisDate(l.logged_at), 'yyyy-MM-dd')))
+  // Start from today if logged today, otherwise from yesterday (streak still alive)
+  let cursor = logDates.has(todayKey) ? nowParis : logDates.has(yesterdayKey) ? subDays(nowParis, 1) : null
+  if (!cursor) return 0
+  let streak = 0
+  while (logDates.has(format(cursor, 'yyyy-MM-dd'))) {
+    streak++
+    cursor = subDays(cursor, 1)
+  }
+  return streak
+}
+
 export function getStreakEmoji(streak: number): string {
   if (streak >= 30) return '🔥'
   if (streak >= 14) return '⚡'

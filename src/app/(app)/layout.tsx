@@ -8,7 +8,7 @@ import { VotePanelWrapper } from '@/components/features/VotePanelWrapper'
 import { FadeOnRoute } from '@/components/ui/FadeOnRoute'
 import { SleepReminder } from '@/components/features/SleepReminder'
 import { PushPrompt } from '@/components/features/PushPrompt'
-import { parisWallToUTC } from '@/lib/utils'
+import { parisWallToUTC, computeStreak } from '@/lib/utils'
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const supabase = await createClient()
@@ -38,23 +38,21 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     profile = newProfile!
   }
 
-  const { data: streakData } = await supabase
-    .from('user_streaks')
-    .select('current_streak')
-    .eq('user_id', user.id)
-    .single()
-
-  const { count: unreadCount } = await supabase
-    .from('notifications')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', user.id)
-    .eq('is_read', false)
-
-  // Sommeil déjà loggé aujourd'hui ? (pour le pop-up matinal)
   const nowParis = new Date(new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }))
   const todayWall = new Date(nowParis); todayWall.setHours(0, 0, 0, 0)
   const todayStartISO = parisWallToUTC(todayWall).toISOString()
-  const { data: sommeilActivity } = await supabase.from('activities').select('id').eq('name', 'Sommeil').maybeSingle()
+  const twoHundredDaysAgo = new Date(nowParis)
+  twoHundredDaysAgo.setDate(twoHundredDaysAgo.getDate() - 200)
+
+  const [unreadRes, streakLogsRes, sommeilActivityRes] = await Promise.all([
+    supabase.from('notifications').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('is_read', false),
+    supabase.from('activity_logs').select('logged_at').eq('user_id', user.id).gte('logged_at', twoHundredDaysAgo.toISOString()),
+    supabase.from('activities').select('id').eq('name', 'Sommeil').maybeSingle(),
+  ])
+
+  const streak = computeStreak(streakLogsRes.data ?? [])
+  const sommeilActivity = sommeilActivityRes.data
+
   let sleepLoggedToday = false
   if (sommeilActivity) {
     const { count: sleepCount } = await supabase
@@ -68,9 +66,9 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-screen bg-gray-950">
-      <Sidebar streak={streakData?.current_streak ?? 0} username={profile.username} />
+      <Sidebar streak={streak} username={profile.username} />
       <div className="flex-1 flex flex-col min-w-0">
-        <Topbar profile={profile} notificationCount={unreadCount ?? 0} />
+        <Topbar profile={profile} notificationCount={unreadRes.count ?? 0} />
         <main className="flex-1 p-4 lg:p-6 pb-24 lg:pb-6">
           <FadeOnRoute>{children}</FadeOnRoute>
         </main>
