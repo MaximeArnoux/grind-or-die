@@ -10,8 +10,10 @@ export default async function AjouterPage() {
   const nowParis = new Date(new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }))
   const todayStart = new Date(nowParis)
   todayStart.setHours(0, 0, 0, 0)
+  const yesterdayStart = new Date(todayStart)
+  yesterdayStart.setDate(yesterdayStart.getDate() - 1)
 
-  const [activitiesRes, objectivesRes, groupMembershipsRes, todayLogsRes, profileRes] = await Promise.all([
+  const [activitiesRes, objectivesRes, groupMembershipsRes, todayLogsRes, yesterdayLogsRes, profileRes] = await Promise.all([
     supabase
       .from('activities')
       .select('*, category:activity_categories(name, emoji, color)')
@@ -32,6 +34,12 @@ export default async function AjouterPage() {
       .eq('user_id', user.id)
       .gte('logged_at', todayStart.toISOString()),
     supabase
+      .from('activity_logs')
+      .select('activity_id')
+      .eq('user_id', user.id)
+      .gte('logged_at', yesterdayStart.toISOString())
+      .lt('logged_at', todayStart.toISOString()),
+    supabase
       .from('profiles')
       .select('routine')
       .eq('id', user.id)
@@ -42,9 +50,11 @@ export default async function AjouterPage() {
 
   const todayCounts: Record<string, number> = {}
   for (const log of todayLogsRes.data ?? []) {
-    if (log.activity_id) {
-      todayCounts[log.activity_id] = (todayCounts[log.activity_id] ?? 0) + 1
-    }
+    if (log.activity_id) todayCounts[log.activity_id] = (todayCounts[log.activity_id] ?? 0) + 1
+  }
+  const yesterdayCounts: Record<string, number> = {}
+  for (const log of yesterdayLogsRes.data ?? []) {
+    if (log.activity_id) yesterdayCounts[log.activity_id] = (yesterdayCounts[log.activity_id] ?? 0) + 1
   }
 
   const userGroups = (groupMembershipsRes.data ?? []).map((m: any) => {
@@ -64,6 +74,7 @@ export default async function AjouterPage() {
         userId={user.id}
         userGroups={userGroups}
         todayCounts={todayCounts}
+        yesterdayCounts={yesterdayCounts}
         initialRoutine={initialRoutine}
       />
     </div>

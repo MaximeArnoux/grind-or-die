@@ -106,15 +106,16 @@ interface Props {
   userId: string
   userGroups: GroupOption[]
   todayCounts: Record<string, number>
+  yesterdayCounts: Record<string, number>
   initialRoutine: string[]
 }
 
-function isAtDailyLimit(activity: Activity, todayCounts: Record<string, number>): boolean {
+function isAtDailyLimit(activity: Activity, counts: Record<string, number>): boolean {
   if (!activity.max_per_day || activity.max_per_day <= 0) return false
-  return (todayCounts[activity.id] ?? 0) >= activity.max_per_day
+  return (counts[activity.id] ?? 0) >= activity.max_per_day
 }
 
-export function LogActivityClient({ activities, userObjectives, userId, userGroups, todayCounts, initialRoutine }: Props) {
+export function LogActivityClient({ activities, userObjectives, userId, userGroups, todayCounts, yesterdayCounts, initialRoutine }: Props) {
   const router = useRouter()
   const supabase = createClient()
 
@@ -176,25 +177,27 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
     return map
   }, [userObjectives])
 
+  const activeCounts = logDate === 'yesterday' ? yesterdayCounts : todayCounts
+
   const sommeilAtLimit = useMemo(() => {
     const a = activities.find(a => a.name === SLEEP_ACTIVITY)
-    return a ? isAtDailyLimit(a, todayCounts) : false
-  }, [activities, todayCounts])
+    return a ? isAtDailyLimit(a, activeCounts) : false
+  }, [activities, activeCounts])
 
   const salleAtLimit = useMemo(() => {
     const a = activities.find(a => a.name === 'Salle de sport')
-    return a ? isAtDailyLimit(a, todayCounts) : false
-  }, [activities, todayCounts])
+    return a ? isAtDailyLimit(a, activeCounts) : false
+  }, [activities, activeCounts])
 
   const streetAtLimit = useMemo(() => {
     const a = activities.find(a => a.name === 'Street workout')
-    return a ? isAtDailyLimit(a, todayCounts) : false
-  }, [activities, todayCounts])
+    return a ? isAtDailyLimit(a, activeCounts) : false
+  }, [activities, activeCounts])
 
   const stretchingAtLimit = useMemo(() => {
     const a = activities.find(a => a.name === 'Stretching 10min')
-    return a ? isAtDailyLimit(a, todayCounts) : false
-  }, [activities, todayCounts])
+    return a ? isAtDailyLimit(a, activeCounts) : false
+  }, [activities, activeCounts])
 
   // Activities excluding Fitness and Sommeil categories (handled by special cards)
   const regularActivities = useMemo(() => {
@@ -258,7 +261,7 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
       for (const id of routine) {
         const activity = activities.find(a => a.id === id)
         if (!activity) continue
-        if (isAtDailyLimit(activity, todayCounts)) continue
+        if (isAtDailyLimit(activity, activeCounts)) continue
         if (next.some(i => i.activity.id === id)) continue
         const objective = objectiveMap.get(id)
         next.push({ activity, count: 1, notes: '', multiplier: objective?.multiplier ?? 1 })
@@ -278,7 +281,7 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
 
   function getMaxAllowed(activity: Activity): number {
     if (!activity.max_per_day || activity.max_per_day <= 0) return Infinity
-    const alreadyLogged = todayCounts[activity.id] ?? 0
+    const alreadyLogged = activeCounts[activity.id] ?? 0
     return Math.max(1, activity.max_per_day - alreadyLogged)
   }
 
@@ -607,7 +610,7 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
           const hasObjective = objectiveMap.has(activity.id)
           const cartItem = cartMap.get(activity.id)
           const inCart = !!cartItem
-          const atLimit = isAtDailyLimit(activity, todayCounts)
+          const atLimit = isAtDailyLimit(activity, activeCounts)
           return (
             <button
               key={activity.id}
