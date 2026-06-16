@@ -20,7 +20,7 @@ const SPECIAL_ACTIVITIES = ['Jeux vidéo', 'Réseaux sociaux']
 // Activités gérées automatiquement — jamais affichées dans la grille
 const HIDDEN_ACTIVITIES = ['Objectif du jour accompli', 'Objectif du jour réussi']
 
-type SportDiscipline = 'course' | 'velo' | 'salle' | 'street' | 'pompes' | 'pas' | 'stretching' | 'abdos'
+type SportDiscipline = 'course' | 'velo' | 'salle' | 'street' | 'pompes' | 'pas' | 'stretching' | 'abdos' | 'gainage'
 
 const DISCIPLINES: { key: SportDiscipline; label: string; emoji: string }[] = [
   { key: 'course', label: 'Course', emoji: '🏃' },
@@ -29,6 +29,7 @@ const DISCIPLINES: { key: SportDiscipline; label: string; emoji: string }[] = [
   { key: 'street', label: 'Street', emoji: '💪' },
   { key: 'pompes', label: 'Pompes', emoji: '🤸' },
   { key: 'abdos', label: 'Abdos', emoji: '🔥' },
+  { key: 'gainage', label: 'Gainage', emoji: '🧱' },
   { key: 'pas', label: 'Pas', emoji: '👟' },
   { key: 'stretching', label: 'Stretching', emoji: '🧘' },
 ]
@@ -45,6 +46,7 @@ function calcSportPoints(discipline: SportDiscipline, value: number): number {
     case 'stretching': return 2
     case 'pompes': return Math.floor(value / 50) * 2
     case 'abdos': return Math.floor(value / 50) * 2
+    case 'gainage': return Math.floor(value / 3) * 2
     case 'pas': return Math.floor(value / 10000) * 2
   }
 }
@@ -357,7 +359,7 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
     const disciplineNames: Record<SportDiscipline, string> = {
       course: 'Course à pied', velo: 'Vélo',
       salle: 'Salle de sport', street: 'Street workout',
-      pompes: 'Pompes', abdos: 'Abdos', pas: 'Pas', stretching: 'Stretching 10min',
+      pompes: 'Pompes', abdos: 'Abdos', gainage: 'Gainage', pas: 'Pas', stretching: 'Stretching 10min',
     }
     const needsInput = !FIXED_DISCIPLINES.includes(discipline)
     const val = parseFloat(sportValue)
@@ -368,6 +370,7 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
       discipline === 'course' || discipline === 'velo' ? `${val} km` :
       discipline === 'pompes' ? `${val} pompes` :
       discipline === 'abdos' ? `${val} abdos` :
+      discipline === 'gainage' ? `${val} min` :
       discipline === 'pas' ? `${val} pas` : ''
 
     setSportLoading(true)
@@ -814,6 +817,15 @@ export function LogActivityClient({ activities, userObjectives, userId, userGrou
               value={sportValue}
               onChange={e => setSportValue(e.target.value)}
               placeholder="Ex: 100"
+            />
+          )}
+          {discipline === 'gainage' && (
+            <Input
+              label="Durée (minutes)"
+              type="number"
+              value={sportValue}
+              onChange={e => setSportValue(e.target.value)}
+              placeholder="Ex: 6"
             />
           )}
           {discipline === 'pas' && (
